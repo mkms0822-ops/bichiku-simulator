@@ -223,11 +223,10 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
 
 /* BGMの選択 */
 .snd .now.sm{font-size:calc((12px) * var(--k));margin-top:4px}
-.gtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px}
-.gtabs button{border:0;background:transparent;color:var(--tx2);font:inherit;font-weight:800;font-size:calc((14px) * var(--k));padding:8px 4px;border-radius:9px;position:relative;cursor:pointer}
+.gtabs{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px}
+.gtabs button{flex:1 1 0;min-width:6.5em;border:0;background:transparent;color:var(--tx2);font:inherit;font-weight:800;font-size:calc((14px) * var(--k));padding:8px 4px;border-radius:9px;position:relative;cursor:pointer}
 .gtabs button.on{background:#ffcf4a;color:#1a1a1a}
 .gtabs button.cur:not(.on)::after{content:'';position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:#ffcf4a}
-@media (max-width:520px){.gtabs{grid-template-columns:repeat(2,1fr)}}
 .trks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
 @media (max-width:520px){.trks{grid-template-columns:1fr}.trk{padding:6px 10px!important}}
 .trk{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:9px 12px;color:var(--tx);cursor:pointer;font:inherit}
@@ -431,7 +430,7 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
   <p class="now" id="sndNow"></p>
   <div class="gtabs" id="genreTabs" role="tablist" aria-label="BGMのジャンル"></div>
   <div class="trks" id="trkList"></div>
-  <p class="now sm">ロックとクラシックは同じ6曲のアレンジ違いです。タブを切り替えると、同じ曲のまま雰囲気が変わります。結果発表では、ランクに合わせて拍手や声が流れます。</p>
+  <p class="now sm">結果発表では、ランクに合わせて拍手や声が流れます。</p>
   <label class="chk"><input type="checkbox" id="sndC" onchange="setSound(this.checked)"> サウンドを鳴らす</label>
   <div class="vol"><label for="bvR">BGMの音量</label><input type="range" id="bvR" min="0" max="100" step="5" oninput="setBgmVol(+this.value)"><span id="bvLb"></span></div>
   <div class="vol"><label for="svR">効果音の音量</label><input type="range" id="svR" min="0" max="100" step="5" oninput="setSeVol(+this.value)" onchange="setSeVol(+this.value,true)"><span id="svLb"></span></div>
@@ -479,12 +478,14 @@ document.addEventListener('click', function(e){ var p = document.getElementById(
 function numLs(k, d){ var v = parseFloat(ls(k)); return isNaN(v) ? d : Math.min(1, Math.max(0, v)); }
 /* BGM:bgm/ フォルダの曲(ロック・クラシック)か、ブラウザ内の合成音から選べます */
 var BGM_DIR = 'bgm/';
+/* ロックの曲ファイルが届くまで、ロックは非表示(届いたら ROCK_READY を true にする) */
+var ROCK_READY = false;
 var GENRES = [
   {id:'rock',    t:'ロック',     ic:'🎸'},
   {id:'classic', t:'クラシック', ic:'🎻'},
   {id:'synth',   t:'シンセ',     ic:'🎛'},
   {id:'none',    t:'BGMなし',    ic:'🔇'}
-];
+].filter(function(g){ return ROCK_READY || g.id !== 'rock'; });
 var SONGS = [
   {k:'kaiki',    t:'世にも奇怪な物語', rock:{bpm:124, len:'4分30秒'},  classic:{len:'4分34秒'}},
   {k:'nazotoki', t:'謎解きをしよう',   rock:{bpm:100, len:'10分08秒'}, classic:{len:'10分11秒'}},
@@ -499,11 +500,11 @@ function trackList(g){
   return [{id:'none', t:'BGMなし', sub:'効果音だけ鳴らします'}];
 }
 function genreOf(id){ return /^rock/.test(id) ? 'rock' : /^classic/.test(id) ? 'classic' : id === 'synth' ? 'synth' : 'none'; }
-function findTrack(id){ return trackList(genreOf(id)).filter(function(t){ return t.id === id; })[0]; }
+function findTrack(id){ if(!ROCK_READY && genreOf(id) === 'rock') return null; return trackList(genreOf(id)).filter(function(t){ return t.id === id; })[0]; }
 var SND = { on:false, ac:null, master:null, bgmG:null, seG:null, trackG:null, mood:'off', timer:null, step:0, drone:null,
-  audio:null, srcNode:null, missing:false, track:ls(PFX + 'bgm') || 'rock1-kaiki', view:null,
+  audio:null, srcNode:null, missing:false, track:ls(PFX + 'bgm') || (ROCK_READY ? 'rock1-kaiki' : 'classic1-kaiki'), view:null,
   bgmVol:numLs(PFX + 'bv', 0.6), seVol:numLs(PFX + 'sv', 0.8), typeSnd:ls(PFX + 'ts') !== '0' };
-if(!findTrack(SND.track)) SND.track = 'rock1-kaiki';
+if(!findTrack(SND.track)) SND.track = /^rock\d/.test(SND.track) ? SND.track.replace(/^rock/, 'classic') : 'classic1-kaiki';
 SND.view = genreOf(SND.track);
 function ac(){
   if(!SND.ac){
