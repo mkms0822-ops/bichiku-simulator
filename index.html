@@ -221,6 +221,27 @@ html:not(.light) .ic-sun{display:none} html.light .ic-moon{display:none}
 footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padding:20px 10px 30px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+/* BGMの選択 */
+.snd .now.sm{font-size:calc((12px) * var(--k));margin-top:4px}
+.gtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px}
+.gtabs button{border:0;background:transparent;color:var(--tx2);font:inherit;font-weight:800;font-size:calc((14px) * var(--k));padding:8px 4px;border-radius:9px;position:relative;cursor:pointer}
+.gtabs button.on{background:#ffcf4a;color:#1a1a1a}
+.gtabs button.cur:not(.on)::after{content:'';position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:#ffcf4a}
+@media (max-width:520px){.gtabs{grid-template-columns:repeat(2,1fr)}}
+.trks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+@media (max-width:520px){.trks{grid-template-columns:1fr}.trk{padding:6px 10px!important}}
+.trk{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:9px 12px;color:var(--tx);cursor:pointer;font:inherit}
+.trk:hover{border-color:rgba(255,207,74,.6)}
+.trk.on{border-color:#ffcf4a;background:rgba(255,207,74,.12)}
+.trk .ti{width:24px;text-align:center;font-size:calc((16px) * var(--k));flex-shrink:0;color:#ffcf4a}
+.trk .tn{flex:1;font-weight:700;font-size:calc((15px) * var(--k));line-height:1.4}
+.trk .tn small{display:block;font-weight:400;font-size:calc((12px) * var(--k));color:var(--tx2)}
+.trk .tg{font-size:calc((11px) * var(--k));font-weight:800;background:#ffcf4a;color:#1a1a1a;border-radius:99px;padding:2px 8px;flex-shrink:0}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px}
+.eq i{display:block;width:3px;background:#ffcf4a;animation:eqb .9s infinite ease-in-out}
+.eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.45s}
+@keyframes eqb{0%,100%{height:4px}50%{height:14px}}
+
 /* ===== 備蓄シミュレーター追加分 ===== */
 .hero{background:radial-gradient(120% 90% at 20% 0%,#163a2c 0%,#141b2b 55%,#0b1019 100%)}
 .hero .kick{background:#3ddc97;color:#062a1a}
@@ -309,7 +330,7 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
       <div class="btns">
         <button class="btn" type="button" onclick="startApp(true)">🔊 サウンドありで始める</button>
         <button class="btn sub" type="button" onclick="startApp(false)">🔇 サウンドなしで始める</button>
-        <button class="btn sub" type="button" onclick="openSnd()">🎵 音量を調整</button>
+        <button class="btn sub" type="button" onclick="openSnd()">🎵 BGM・音量を選ぶ</button>
       </div>
     </div>
     <div class="howto">
@@ -329,11 +350,12 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
     <div class="game">
       <div class="stage" id="stage">
         <div class="ph on" id="ph"><div><div class="ph-big" id="phIc">🏙️</div><div class="ph-sub" id="phLb"></div></div></div>
+        <div class="bg" id="bg"></div>
         <div class="vig"></div>
         <div class="hud">
           <span class="t" id="gTitle">備蓄サバイバル・シミュレーター</span>
           <button type="button" id="sndBtn" onclick="toggleSound()" title="サウンドのオン/オフ" aria-label="サウンド切替">🔊</button>
-          <button type="button" onclick="openSnd()" title="音量" aria-label="音量">🎵</button>
+          <button type="button" onclick="openSnd()" title="BGM・音量" aria-label="BGM・音量">🎵</button>
           <button type="button" onclick="openLog()" title="これまでの記録" aria-label="これまでの記録">📜</button>
           <button type="button" onclick="quitGame()" title="タイトルにもどる" aria-label="タイトルにもどる">✕</button>
         </div>
@@ -404,9 +426,12 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
   <div style="text-align:right;margin-top:8px"><button class="back" type="button" onclick="closeLog()">閉じる</button></div>
 </div></div>
 
-<div class="ov" id="ovSnd" onclick="if(event.target===this)closeSnd()"><div class="log snd" role="dialog" aria-modal="true" aria-label="音量">
-  <h3>🎵 サウンドの設定</h3>
-  <p class="now">BGMと効果音は、ブラウザの中で合成しています。場面に合わせて曲調が変わります。結果発表では、ランクに合わせて拍手や声が流れます。</p>
+<div class="ov" id="ovSnd" onclick="if(event.target===this)closeSnd()"><div class="log snd" role="dialog" aria-modal="true" aria-label="BGMと音量">
+  <h3>🎵 BGM・サウンドの設定</h3>
+  <p class="now" id="sndNow"></p>
+  <div class="gtabs" id="genreTabs" role="tablist" aria-label="BGMのジャンル"></div>
+  <div class="trks" id="trkList"></div>
+  <p class="now sm">ロックとクラシックは同じ6曲のアレンジ違いです。タブを切り替えると、同じ曲のまま雰囲気が変わります。結果発表では、ランクに合わせて拍手や声が流れます。</p>
   <label class="chk"><input type="checkbox" id="sndC" onchange="setSound(this.checked)"> サウンドを鳴らす</label>
   <div class="vol"><label for="bvR">BGMの音量</label><input type="range" id="bvR" min="0" max="100" step="5" oninput="setBgmVol(+this.value)"><span id="bvLb"></span></div>
   <div class="vol"><label for="svR">効果音の音量</label><input type="range" id="svR" min="0" max="100" step="5" oninput="setSeVol(+this.value)" onchange="setSeVol(+this.value,true)"><span id="svLb"></span></div>
@@ -452,8 +477,34 @@ document.addEventListener('click', function(e){ var p = document.getElementById(
 
 /* ===================== サウンド(Web Audioで合成) ===================== */
 function numLs(k, d){ var v = parseFloat(ls(k)); return isNaN(v) ? d : Math.min(1, Math.max(0, v)); }
-var SND = { on:false, ac:null, master:null, bgmG:null, seG:null, mood:'off', timer:null, step:0, drone:null,
+/* BGM:bgm/ フォルダの曲(ロック・クラシック)か、ブラウザ内の合成音から選べます */
+var BGM_DIR = 'bgm/';
+var GENRES = [
+  {id:'rock',    t:'ロック',     ic:'🎸'},
+  {id:'classic', t:'クラシック', ic:'🎻'},
+  {id:'synth',   t:'シンセ',     ic:'🎛'},
+  {id:'none',    t:'BGMなし',    ic:'🔇'}
+];
+var SONGS = [
+  {k:'kaiki',    t:'世にも奇怪な物語', rock:{bpm:124, len:'4分30秒'},  classic:{len:'4分34秒'}},
+  {k:'nazotoki', t:'謎解きをしよう',   rock:{bpm:100, len:'10分08秒'}, classic:{len:'10分11秒'}},
+  {k:'shinso',   t:'真相はここに',     rock:{bpm:80,  len:'10分36秒'}, classic:{len:'10分40秒'}},
+  {k:'kaisen',   t:'荒波の海戦',       rock:{bpm:190, len:'10分35秒'}, classic:{len:'10分37秒'}},
+  {k:'tegami',   t:'手紙を出すよ',     rock:{bpm:105, len:'9分59秒'},  classic:{len:'10分03秒'}},
+  {k:'namida',   t:'涙の結晶',         rock:{bpm:81,  len:'10分26秒'}, classic:{len:'10分28秒'}}
+];
+function trackList(g){
+  if(g === 'rock' || g === 'classic') return SONGS.map(function(s, i){ var m = s[g]; return {id:g + (i + 1) + '-' + s.k, t:s.t, sub:(m.bpm ? 'BPM' + m.bpm + '・' : '') + m.len + '・リピート'}; });
+  if(g === 'synth') return [{id:'synth', t:'場面に合わせて変化', sub:'地震・夜・朝などで曲調が変わる合成音'}];
+  return [{id:'none', t:'BGMなし', sub:'効果音だけ鳴らします'}];
+}
+function genreOf(id){ return /^rock/.test(id) ? 'rock' : /^classic/.test(id) ? 'classic' : id === 'synth' ? 'synth' : 'none'; }
+function findTrack(id){ return trackList(genreOf(id)).filter(function(t){ return t.id === id; })[0]; }
+var SND = { on:false, ac:null, master:null, bgmG:null, seG:null, trackG:null, mood:'off', timer:null, step:0, drone:null,
+  audio:null, srcNode:null, missing:false, track:ls(PFX + 'bgm') || 'rock1-kaiki', view:null,
   bgmVol:numLs(PFX + 'bv', 0.6), seVol:numLs(PFX + 'sv', 0.8), typeSnd:ls(PFX + 'ts') !== '0' };
+if(!findTrack(SND.track)) SND.track = 'rock1-kaiki';
+SND.view = genreOf(SND.track);
 function ac(){
   if(!SND.ac){
     var C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
@@ -461,6 +512,7 @@ function ac(){
     SND.master = SND.ac.createGain(); SND.master.gain.value = 0.9; SND.master.connect(SND.ac.destination);
     SND.bgmG = SND.ac.createGain(); SND.bgmG.gain.value = 0.37 * SND.bgmVol; SND.bgmG.connect(SND.master);
     SND.seG = SND.ac.createGain(); SND.seG.gain.value = 0.7 * SND.seVol; SND.seG.connect(SND.master);
+    SND.trackG = SND.ac.createGain(); SND.trackG.gain.value = SND.bgmVol; SND.trackG.connect(SND.master);
   }
   if(SND.ac.state === 'suspended') SND.ac.resume();
   return SND.ac;
@@ -508,6 +560,50 @@ var CALM = [[261.6,329.6,392],[220,261.6,329.6],[174.6,220,261.6],[196,246.9,293
 var NIGHT = [[220,261.6,329.6],[174.6,220,261.6],[196,233.1,293.7],[164.8,207.7,246.9]];
 function bgm(m){
   if(m === undefined) return;
+  var g = genreOf(SND.track);
+  if(g === 'rock' || g === 'classic'){
+    if(!SND.missing){ SND.mood = m; stopSynth(); if(SND.on) playTrack(); else stopTrack(); return; }
+  } else if(g === 'none'){ SND.mood = m; stopSynth(); stopTrack(); return; }
+  stopTrack();
+  synthBgm(m);
+}
+function stopSynth(){ if(SND.timer){ clearInterval(SND.timer); SND.timer = null; } stopDrone(); }
+/* 選んだ曲をリピート再生(曲が見つからないときは合成音に切り替え) */
+var useGraph = /^https?:$/.test(location.protocol);   // ネット上ではWeb Audio経由(iPhoneでも音量調整が効く)
+function playTrack(){
+  var tr = SND.track, g = genreOf(tr); if(!SND.on || (g !== 'rock' && g !== 'classic')) return;
+  if(!SND.audio){
+    SND.audio = new Audio(); SND.audio.loop = true; SND.audio.preload = 'auto';
+    if(useGraph){ try{ var a = ac(); SND.audio.crossOrigin = 'anonymous'; SND.srcNode = a.createMediaElementSource(SND.audio); SND.srcNode.connect(SND.trackG); }catch(e){ SND.srcNode = null; } }
+    SND.audio.addEventListener('error', function(){
+      if(!SND.audio.getAttribute('data-id')) return;
+      SND.missing = true; SND.audio.removeAttribute('data-id');
+      var m = SND.mood; SND.mood = ''; if(SND.on) synthBgm(m && m !== 'off' ? m : 'calm');
+      renderSnd();
+    });
+    SND.audio.addEventListener('playing', function(){ SND.missing = false; });
+  }
+  if(SND.audio.getAttribute('data-id') !== tr){
+    SND.audio.setAttribute('data-id', tr); SND.audio.src = BGM_DIR + tr + '.mp3';
+    var r = SND.resumeAt; SND.resumeAt = null;
+    if(r) SND.audio.addEventListener('loadedmetadata', function f(){ SND.audio.removeEventListener('loadedmetadata', f); try{ SND.audio.currentTime = r * SND.audio.duration; }catch(e){} });
+  } else SND.resumeAt = null;
+  applyVol();
+  if(SND.audio.paused){ var pr = SND.audio.play(); if(pr && pr.catch) pr.catch(function(){}); }
+}
+function stopTrack(){ if(SND.audio && !SND.audio.paused) SND.audio.pause(); }
+/* 結果の声が聞こえるよう、BGMを一時的に小さくする */
+function duckBgm(sec){
+  var low = 0.3;
+  if(SND.ac){
+    var t = SND.ac.currentTime;
+    [[SND.trackG, SND.bgmVol], [SND.bgmG, 0.37 * SND.bgmVol]].forEach(function(p){
+      var gn = p[0].gain; gn.cancelScheduledValues(t); gn.setValueAtTime(p[1] * low, t); gn.setValueAtTime(p[1] * low, t + sec); gn.linearRampToValueAtTime(p[1], t + sec + 1.2);
+    });
+  }
+  if(SND.audio && !SND.srcNode){ SND.audio.volume = SND.bgmVol * low; setTimeout(function(){ if(SND.audio && !SND.srcNode) SND.audio.volume = SND.bgmVol; }, (sec + 0.5) * 1000); }
+}
+function synthBgm(m){
   if(m === SND.mood && (SND.timer || !SND.on || m === 'off')) return;
   SND.mood = m;
   if(SND.timer){ clearInterval(SND.timer); SND.timer = null; }
@@ -558,18 +654,63 @@ function setSound(on){
   SND.on = !!on; ls(PFX + 'snd', on ? '1' : '0');
   var b = document.getElementById('sndBtn'); if(b) b.textContent = on ? '🔊' : '🔇';
   var c = document.getElementById('sndC'); if(c) c.checked = SND.on;
-  if(on){ ac(); var m = SND.mood; SND.mood = ''; bgm(m === 'off' || !m ? 'calm' : m); }
-  else { var keep = SND.mood; if(SND.timer){ clearInterval(SND.timer); SND.timer = null; } stopDrone(); SND.mood = keep; }
+  var m = SND.mood;
+  if(on){ ac(); SND.mood = ''; bgm(m === 'off' || !m ? 'calm' : m); }
+  else { stopSynth(); stopTrack(); SND.mood = m; }
+  renderSnd();
 }
 function toggleSound(){ setSound(!SND.on); if(SND.on) se('click'); }
-function applyVol(){ if(SND.ac){ SND.bgmG.gain.value = 0.37 * SND.bgmVol; SND.seG.gain.value = 0.7 * SND.seVol; } }
-function setBgmVol(v){ SND.bgmVol = v / 100; ls(PFX + 'bv', SND.bgmVol); applyVol(); renderSnd(); }
-function setSeVol(v, test){ SND.seVol = v / 100; ls(PFX + 'sv', SND.seVol); applyVol(); renderSnd(); if(test){ var w = SND.on; SND.on = true; se('get'); SND.on = w; } }
+function applyVol(){
+  if(SND.ac){ SND.bgmG.gain.value = 0.37 * SND.bgmVol; SND.seG.gain.value = 0.7 * SND.seVol; SND.trackG.gain.value = SND.bgmVol; }
+  if(SND.audio) SND.audio.volume = SND.srcNode ? 1 : SND.bgmVol;
+}
+function setBgmVol(v){ SND.bgmVol = v / 100; ls(PFX + 'bv', SND.bgmVol); applyVol(); renderSnd(true); }
+function setSeVol(v, test){ SND.seVol = v / 100; ls(PFX + 'sv', SND.seVol); applyVol(); renderSnd(true); if(test){ var w = SND.on; SND.on = true; se('get'); SND.on = w; } }
 function setTypeSnd(on){ SND.typeSnd = on; ls(PFX + 'ts', on ? '1' : '0'); }
-function renderSnd(){
-  document.getElementById('bvR').value = Math.round(SND.bgmVol * 100); document.getElementById('bvLb').textContent = Math.round(SND.bgmVol * 100);
-  document.getElementById('svR').value = Math.round(SND.seVol * 100); document.getElementById('svLb').textContent = Math.round(SND.seVol * 100);
+/* ジャンルのタブ(ロック⇔クラシックは同じ曲のまま切り替え) */
+function selectGenre(g){
+  SND.view = g;
+  var cur = genreOf(SND.track);
+  if(g === cur){ renderSnd(); return; }
+  if((g === 'rock' || g === 'classic') && (cur === 'rock' || cur === 'classic')){
+    var n = +SND.track.match(/^\D+(\d+)/)[1];
+    if(SND.audio && SND.audio.duration && !SND.audio.paused) SND.resumeAt = SND.audio.currentTime / SND.audio.duration;   // 同じ曲の同じ場所から続ける
+    selectTrack(trackList(g)[n - 1].id); return;
+  }
+  if(g === 'synth' || g === 'none'){ selectTrack(g); return; }
+  renderSnd();
+}
+function selectTrack(id){
+  if(!findTrack(id)) return;
+  SND.track = id; SND.view = genreOf(id); SND.missing = false; ls(PFX + 'bgm', id);
+  if(id !== 'none' && !SND.on){ setSound(true); }
+  var m = SND.mood && SND.mood !== 'off' ? SND.mood : 'calm';
+  SND.mood = ''; stopSynth(); bgm(m);
+  renderSnd();
+}
+function renderSnd(volOnly){
+  document.getElementById('bvLb').textContent = Math.round(SND.bgmVol * 100); document.getElementById('svLb').textContent = Math.round(SND.seVol * 100);
+  if(volOnly) return;
+  document.getElementById('bvR').value = Math.round(SND.bgmVol * 100); document.getElementById('svR').value = Math.round(SND.seVol * 100);
   document.getElementById('tsC').checked = SND.typeSnd; document.getElementById('sndC').checked = SND.on;
+  var gEl = document.getElementById('genreTabs'), tEl = document.getElementById('trkList'); if(!gEl || !tEl) return;
+  var cur = genreOf(SND.track), view = SND.view || cur;
+  gEl.innerHTML = GENRES.map(function(g){
+    return '<button type="button" role="tab" data-g="' + g.id + '" class="' + (g.id === view ? 'on' : '') + (g.id === cur ? ' cur' : '') + '" aria-selected="' + (g.id === view) + '" onclick="selectGenre(\'' + g.id + '\')">' + g.ic + ' ' + g.t + '</button>';
+  }).join('');
+  var playing = SND.on && SND.track !== 'none';
+  tEl.innerHTML = trackList(view).map(function(t){
+    var on = t.id === SND.track;
+    return '<button type="button" class="trk' + (on ? ' on' : '') + '" data-t="' + t.id + '" onclick="selectTrack(\'' + t.id + '\')" aria-pressed="' + on + '">' +
+      '<span class="ti">' + (on ? (playing ? '<span class="eq"><i></i><i></i><i></i></span>' : '⏸') : (view === 'rock' || view === 'classic' ? '♪' : view === 'synth' ? '🎛' : '🔇')) + '</span>' +
+      '<span class="tn">' + esc(t.t) + '<small>' + esc(t.sub) + '</small></span>' +
+      (on ? '<span class="tg">' + (playing ? '再生中' : '選択中') + '</span>' : '') + '</button>';
+  }).join('');
+  var now = findTrack(SND.track), gn = GENRES.filter(function(g){ return g.id === cur; })[0];
+  var msg = !SND.on ? 'サウンドはオフです(曲を選ぶとオンになります)' :
+    SND.track === 'none' ? 'BGMなし(効果音だけ鳴ります)' : '♪ ' + gn.t + ':' + now.t;
+  if(SND.on && SND.missing && (cur === 'rock' || cur === 'classic')) msg += '  ※曲ファイル(bgm フォルダ)が見つからないため、合成音で再生中です';
+  document.getElementById('sndNow').textContent = msg;
 }
 function openSnd(){ renderSnd(); document.getElementById('ovSnd').classList.add('on'); }
 function closeSnd(){ document.getElementById('ovSnd').classList.remove('on'); }
@@ -595,8 +736,34 @@ var PALETTE = {
   tent:['#24402e','#0a140e'], relative:['#3b3048','#110d16'], good:['#1d4a36','#08170f'], bad:['#4a1d24','#170809'],
   winter:['#2f4560','#0b121c'], summer:['#5a4420','#1a1108'], title:['#1d2c44','#0a0f18']
 };
+/* ===================== 場面の画像 =====================
+   画像の置き場所: このHTMLと同じ場所の img/ フォルダに「キー.webp」(.jpg / .png も可)。
+   例: img/quake_shaking.webp 。画像が無い場面は、絵文字と説明を表示します。
+   画像を直接埋め込む場合は IMAGES に キー: 'data:image/webp;base64,...' または URL を書く。 */
+var IMG_DIR = 'img/', IMG_EXT = ['.webp', '.jpg', '.png'], IMAGES = {}, imgCache = {}, curImg = null;
+function resolveImg(key, cb){
+  if(IMAGES[key]) return cb(IMAGES[key]);
+  if(key in imgCache) return cb(imgCache[key]);
+  var i = 0;
+  (function tryNext(){
+    if(i >= IMG_EXT.length){ imgCache[key] = null; return cb(null); }
+    var src = IMG_DIR + key + IMG_EXT[i++], im = new Image();
+    im.onload = function(){ imgCache[key] = src; cb(src); };
+    im.onerror = tryNext; im.src = src;
+  })();
+}
+function setImg(key){
+  curImg = key; var bg = $('bg');
+  if(!key){ bg.classList.remove('on'); $('ph').classList.add('on'); return; }
+  resolveImg(key, function(src){
+    if(curImg !== key) return;
+    if(src){ bg.style.backgroundImage = 'url("' + src + '")'; bg.classList.add('on'); $('ph').classList.remove('on'); }
+    else { bg.classList.remove('on'); $('ph').classList.add('on'); }
+  });
+}
 function scene(o){
   if(!o) return;
+  if(o.img !== undefined || o.ic) setImg(o.img || null);
   if(o.ic){ $('phIc').textContent = o.ic; }
   if(o.lb !== undefined){ $('phLb').textContent = o.lb || ''; }
   if(o.pal){ var p = PALETTE[o.pal] || PALETTE.title; $('ph').style.setProperty('--phc1', p[0]); $('ph').style.setProperty('--phc2', p[1]); }
@@ -815,8 +982,15 @@ function playSeFile(k, delay){
 }
 function resultSound(rank){
   if(!SND.on) return;
+  duckBgm(rank === 'S' ? 4.2 : rank === 'A' ? 3.6 : 2.2);
   (RESULT_SE[rank] || []).forEach(function(x){ playSeFile(x[0], x[1]); });
 }
+
+/* 画面を離れたら音を止め、戻ったら再開 */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ if(SND.ac) SND.ac.suspend(); if(SND.audio && !SND.audio.paused){ SND.audio.pause(); SND.wasPlaying = true; } }
+  else { if(SND.ac && SND.on) SND.ac.resume(); if(SND.wasPlaying && SND.on){ SND.wasPlaying = false; var pr = SND.audio.play(); if(pr && pr.catch) pr.catch(function(){}); } }
+});
 
 /* =========================================================
    備蓄サバイバル・シミュレーター 物語と計算
@@ -910,7 +1084,7 @@ function takeStash(max){
 async function main(){
   S = newState(); renderHud();
   $('gg').style.display = '';
-  await say('ここは、海と山にはさまれた、ごく普通の街。<br>あなたはこの街で、毎日を暮らしています。', {ic:'🏙️', lb:'いつもの街', pal:'title', day:'準備', title:'備蓄サバイバル・シミュレーター', mood:'calm'});
+  await say('ここは、海と山にはさまれた、ごく普通の街。<br>あなたはこの街で、毎日を暮らしています。', {img:'town_everyday', ic:'🏙️', lb:'いつもの街', pal:'title', day:'準備', title:'備蓄サバイバル・シミュレーター', mood:'calm'});
   await say(H('これから、あなたの暮らしを決めていきます。<br>そのうえで、[災害に備えるかどうか]を選んでください。'));
 
   /* ---- 家族構成 ---- */
@@ -921,7 +1095,7 @@ async function main(){
     {t:'小学生の子どもがいる3人家族', v:'kids'},
     {t:'高齢の親と同居する3人家族', sub:'親は毎日飲む持病の薬がある', v:'elder'},
     {t:'一人暮らし+犬', sub:'ペットのごはんや居場所も必要', v:'pet'}
-  ], {ic:'👪', lb:'家族構成'});
+  ], {img:'setup_family', ic:'👪', lb:'家族構成'});
   var F = FAM[S.fam]; S.n = F.n; S.baby = !!F.baby; S.kids = !!F.kids; S.elder = !!F.elder; S.pet = !!F.pet;
   S.home = await ask('住まいは?', [
     {t:'一戸建て(新しい耐震基準)', sub:'2000年以降に建てた家', v:'house'},
@@ -929,16 +1103,16 @@ async function main(){
     {t:'マンションの低い階(1〜3階)', v:'low'},
     {t:'マンションの高い階(10階以上)', v:'high'},
     {t:'木造アパート', v:'apt'}
-  ], {ic:'🏠', lb:'住まい'});
-  S.car = await ask('車を持っていますか?', [{t:'持っている', v:true}, {t:'持っていない', v:false}], {ic:'🚗', lb:'車'});
+  ], {img:'setup_home', ic:'🏠', lb:'住まい'});
+  S.car = await ask('車を持っていますか?', [{t:'持っている', v:true}, {t:'持っていない', v:false}], {img:'setup_car', ic:'🚗', lb:'車'});
   S.season = await ask('季節は?', [
     {t:'冬', sub:'夜は氷点下まで冷え込む', v:'winter'}, {t:'夏', sub:'日中は35℃を超える', v:'summer'}, {t:'春・秋', v:'mild'}
-  ], {ic:'🗓️', lb:'季節'});
+  ], {img:'setup_season', ic:'🗓️', lb:'季節'});
 
   /* ---- 備えるか ---- */
   S.prep = await ask('自分と家族のために、あなたは災害に備えますか?', [
     {t:'はい、備える', v:true}, {t:'いいえ、備えない', sub:'「うちはたぶん大丈夫」', v:false}
-  ], {ic:'🎒', lb:'備えますか?', pal:'title'});
+  ], {img:'prep_question', ic:'🎒', lb:'備えますか?', pal:'title'});
   if(S.prep){
     S.kind = await ask('何を備えますか?', [
       {t:'自宅の備蓄', sub:'水・食料・簡易トイレ・ライト・カセットコンロを家に', v:'home'},
@@ -946,12 +1120,12 @@ async function main(){
       {t:'自宅の備蓄と非常持ち出し袋の両方', v:'both'},
       {t:'水と食料だけ', v:'wf'},
       {t:'水・食料・簡易トイレ', v:'wft'}
-    ], {ic:'📦', lb:'何を備える?'});
+    ], {img:'prep_what', ic:'📦', lb:'何を備える?'});
     if(S.kind !== 'bag'){
       S.amount = await ask('どれくらいの量を備えますか?', [
         {t:'3日分', sub:'国や自治体が「最低限」としている量', v:3},
         {t:'1週間分', sub:'大きな地震に備えて、推奨されている量', v:7}
-      ], {ic:'📦', lb:'備える量'});
+      ], {img:'prep_amount', ic:'📦', lb:'備える量'});
     }
     S.extras = await askMulti('ほかに備えたものは?(いくつでも)', [
       {t:'家具の固定・ガラスの飛散防止', v:'fix'},
@@ -964,12 +1138,12 @@ async function main(){
       {t:'ポリタンク・給水袋', v:'tank'},
       {t:'現金(小銭を含む)', v:'cash'},
       {t:'車のガソリンを半分以下にしない', v:'gas', if:S.car}
-    ], {ic:'🧰', lb:'追加の備え'});
+    ], {img:'prep_extras', ic:'🧰', lb:'追加の備え'});
   } else {
-    await say('「まあ、大きな地震なんて、そう来ないだろう」<br>冷蔵庫と戸棚には、ふだんの食べ物が少しだけ。', {ic:'🛋️', lb:'備えない', pal:'home'});
+    await say('「まあ、大きな地震なんて、そう来ないだろう」<br>冷蔵庫と戸棚には、ふだんの食べ物が少しだけ。', {img:'noprep_living', ic:'🛋️', lb:'備えない', pal:'home'});
   }
   applyPrep(); S.started = true; renderHud();
-  if(S.prep) await say(H('備えにかけた費用は、およそ[' + yen(S.prepYen) + ']。<br>' + (S.kind === 'bag' ? '持ち出し袋は玄関に置きました。' : '備蓄は家の収納にしまいました。')), {ic:'✅', lb:'備え完了', pal:'good'});
+  if(S.prep) await say(H('備えにかけた費用は、およそ[' + yen(S.prepYen) + ']。<br>' + (S.kind === 'bag' ? '持ち出し袋は玄関に置きました。' : '備蓄は家の収納にしまいました。')), {img:'prep_done', ic:'✅', lb:'備え完了', pal:'good'});
   tl('準備:' + FAM[S.fam].t + '・' + HOME[S.home].t + '・' + SEASON[S.season] + '・' + (S.prep ? '備えた' : '備えなかった'));
 
   await quakeNight();
@@ -992,45 +1166,45 @@ async function main(){
 /* ===================== 地震の夜 ===================== */
 async function quakeNight(){
   var dark = S.season === 'winter' ? '外は真っ暗で、凍えるような寒さ。' : S.season === 'summer' ? '蒸し暑い夜。' : '静かな夜。';
-  await say('午前2時17分。' + dark + '<br>家族はみんな、眠っています。', {ic:'🌙', lb:'深夜', pal:'night', day:'地震の夜', mood:'night'});
-  await say(H('突然、スマホがけたたましく鳴り響きます。<br>[「緊急地震速報。強い揺れに警戒してください」]'), {ic:'📱', lb:'緊急地震速報', pal:'quake', se:'alarm', mood:'danger'});
+  await say('午前2時17分。' + dark + '<br>家族はみんな、眠っています。', {img:'night_bedroom', ic:'🌙', lb:'深夜', pal:'night', day:'地震の夜', mood:'night'});
+  await say(H('突然、スマホがけたたましく鳴り響きます。<br>[「緊急地震速報。強い揺れに警戒してください」]'), {img:'eew_alert', ic:'📱', lb:'緊急地震速報', pal:'quake', se:'alarm', mood:'danger'});
   var act = await ask('揺れが来る! どうする?', [
     {t:'布団や枕で頭を守り、揺れがおさまるのを待つ', v:'head'},
     {t:'あわてて外へ飛び出す', v:'out'},
     {t:'台所の火やガスを止めに行く', v:'fire'},
     {t:'別の部屋の家族のもとへ走る', v:'run', if:S.n > 1}
-  ], {ic:'📳', lb:'揺れ始めた', se:'quake', shake:2});
+  ], {img:'quake_shaking', ic:'📳', lb:'揺れ始めた', se:'quake', shake:2});
   scene({se:'quake', shake:2});
   if(act === 'head'){
-    await say(H('ドドドドッ!!<br>体が浮くほどの揺れ。棚の物が次々に落ちてきます。<br>布団で頭を守ったおかげで、<<けがはありませんでした。>>'), {ic:'🛏️', lb:'身を守った', pal:'quake'});
+    await say(H('ドドドドッ!!<br>体が浮くほどの揺れ。棚の物が次々に落ちてきます。<br>布団で頭を守ったおかげで、<<けがはありませんでした。>>'), {img:'protect_head', ic:'🛏️', lb:'身を守った', pal:'quake'});
     point('揺れたらまず頭を守る。揺れている間に動き回るのが一番危険。');
   } else {
     var why = act === 'out' ? '外へ飛び出そうとして、落ちてきた物や割れたガラスで' : act === 'fire' ? '台所へ向かう途中、倒れてきた食器棚の破片で' : '廊下を走る途中で転び、';
-    await say(H('ドドドドッ!!<br>' + why + '{足をけがしてしまいました。}'), {ic:'🩸', lb:'けが', pal:'bad', flash:true});
+    await say(H('ドドドドッ!!<br>' + why + '{足をけがしてしまいました。}'), {img:'injury_foot', ic:'🩸', lb:'けが', pal:'bad', flash:true});
     chg({hp:-12}); S.injured = true; trouble('揺れている最中に動いて、けがをした');
     point('揺れている間は動かない。火の始末は揺れがおさまってから。最近のガスは強い揺れで自動的に止まる。');
   }
   /* 家具 */
   scene({shake:1});
   if(S.inv.fixed){
-    await say(H('揺れがおさまりました。<br>家具を固定していたので、タンスや食器棚は<<倒れていません。>>'), {ic:'🗄️', lb:'家具は無事', pal:'night', mood:'tense'});
+    await say(H('揺れがおさまりました。<br>家具を固定していたので、タンスや食器棚は<<倒れていません。>>'), {img:'furniture_ok', ic:'🗄️', lb:'家具は無事', pal:'night', mood:'tense'});
   } else {
     var big = S.home === 'high' ? '高い階は揺れが大きく長く続き、' : '';
-    await say(H(big + 'タンスや本棚が倒れ、食器棚からは食器が飛び出して、{床はガラスの破片だらけ}です。'), {ic:'🗄️', lb:'家具が倒れた', pal:'bad', se:'glass', mood:'tense'});
+    await say(H(big + 'タンスや本棚が倒れ、食器棚からは食器が飛び出して、{床はガラスの破片だらけ}です。'), {img:'furniture_fallen', ic:'🗄️', lb:'家具が倒れた', pal:'bad', se:'glass', mood:'tense'});
     chg({hp:-6, mind:-8}); trouble('家具が倒れ、部屋がガラスの破片だらけになった');
     point('家具の固定とガラスの飛散防止は、けがを防ぐいちばんの備え。');
   }
   /* 明かり */
   if(S.inv.light){
-    await say('停電です。でも、用意していたライトですぐに明かりがつきました。', {ic:'🔦', lb:'停電', pal:'dark'});
+    await say('停電です。でも、用意していたライトですぐに明かりがつきました。', {img:'blackout_flashlight', ic:'🔦', lb:'停電', pal:'dark'});
   } else {
     var lt = await ask('停電で真っ暗です。どうする?', [
       {t:'スマホのライトをつける', sub:'電池を使う', v:'phone'},
       {t:'手さぐりで動く', v:'feel'}
-    ], {ic:'🌑', lb:'真っ暗', pal:'dark'});
+    ], {img:'blackout_dark', ic:'🌑', lb:'真っ暗', pal:'dark'});
     if(lt === 'phone'){ chg({batt:-15}); await say('スマホのライトで足元を照らしました。電池がみるみる減っていきます。'); }
     else {
-      if(!S.inv.fixed){ chg({hp:-8}); await say(H('{散らばったガラスを踏んでしまいました。}'), {ic:'🩸', pal:'bad'}); trouble('暗闇でガラスを踏んでけがをした'); }
+      if(!S.inv.fixed){ chg({hp:-8}); await say(H('{散らばったガラスを踏んでしまいました。}'), {img:'injury_foot', ic:'🩸', pal:'bad'}); trouble('暗闇でガラスを踏んでけがをした'); }
       else await say('ゆっくり手さぐりで進み、なんとか家族と合流しました。');
     }
     point('枕元にライトとスリッパ(靴)を。停電の夜は真っ暗になる。');
@@ -1042,18 +1216,18 @@ async function quakeNight(){
   else { S.house = rnd() < 0.3 ? 'damaged' : 'ok'; }
   var hmsg = S.house === 'danger' ? '{柱がきしみ、壁に大きなひび。家が少し傾いているようです。}' :
              S.house === 'damaged' ? '[壁にひびが入り、ドアが開けにくくなっています。]' : '<<建物に大きな被害はなさそうです。>>';
-  await say(H(hmsg + (S.home === 'high' || S.home === 'low' ? '<br>マンションのエレベーターは止まっています。' : '')), {ic:S.house === 'danger' ? '🏚️' : '🏠', lb:'家の被害', pal:S.house === 'danger' ? 'bad' : 'night'});
+  await say(H(hmsg + (S.home === 'high' || S.home === 'low' ? '<br>マンションのエレベーターは止まっています。' : '')), {img:'house_' + S.house, ic:S.house === 'danger' ? '🏚️' : '🏠', lb:'家の被害', pal:S.house === 'danger' ? 'bad' : 'night'});
   /* 情報 */
   if(S.inv.radio){
-    await say(H('ラジオをつけると、[「震度6強。〇〇市を中心に大きな被害。電気・水道・ガスが広い範囲で止まっています」]'), {ic:'📻', lb:'情報', pal:'night'});
+    await say(H('ラジオをつけると、[「震度6強。〇〇市を中心に大きな被害。電気・水道・ガスが広い範囲で止まっています」]'), {img:'info_radio', ic:'📻', lb:'情報', pal:'night'});
   } else {
     chg({batt:-10});
-    await say(H('スマホでニュースを見ます。[震度6強]。<br>電気・水道・ガスが止まっています。電話はつながりにくく、電池は残り少なくなってきました。'), {ic:'📱', lb:'情報', pal:'night'});
+    await say(H('スマホでニュースを見ます。[震度6強]。<br>電気・水道・ガスが止まっています。電話はつながりにくく、電池は残り少なくなってきました。'), {img:'info_phone', ic:'📱', lb:'情報', pal:'night'});
     point('停電中の情報源は、電池で動くラジオが心強い。スマホの電池は「命綱」。');
   }
   /* 水が出ない・トイレ */
   scene({se:'water'});
-  await say(H('のどがかわいて蛇口をひねりましたが、{水が出ません。断水です。}'), {ic:'🚰', lb:'断水', pal:'night'});
+  await say(H('のどがかわいて蛇口をひねりましたが、{水が出ません。断水です。}'), {img:'water_off', ic:'🚰', lb:'断水', pal:'night'});
   var need = S.n;
   if(S.inv.water >= 1){ chg({water:-Math.min(S.inv.water, 0.5 * need)}); await say('用意していた水を少し飲み、落ち着きました。'); }
   else { chg({mind:-5}); await say(H('{家に飲み水がほとんどありません。}'), {pal:'bad'}); }
@@ -1062,20 +1236,20 @@ async function quakeNight(){
     {t:'携帯トイレ(簡易トイレ)を使う', sub:'あと ' + S.inv.toilet + '回分', v:'kit', if:S.inv.toilet > 0},
     {t:'便器にポリ袋をかぶせて、新聞紙を入れて使う', v:'diy'},
     {t:'朝までがまんする', v:'hold'}
-  ], {ic:'🚽', lb:'トイレ', pal:'night'});
+  ], {img:'toilet_night', ic:'🚽', lb:'トイレ', pal:'night'});
   if(tq === 'flush'){
     if(S.home === 'low' || S.home === 'high' || S.home === 'apt'){
       chg({hyg:-15, mind:-10});
-      await say(H('流した水が排水管の壊れた所から漏れ、{下の階の部屋に汚水がしみ出してしまいました。}'), {ic:'💦', lb:'漏水', pal:'bad'});
+      await say(H('流した水が排水管の壊れた所から漏れ、{下の階の部屋に汚水がしみ出してしまいました。}'), {img:'toilet_leak', ic:'💦', lb:'漏水', pal:'bad'});
       trouble('断水中にトイレを流し、下の階に漏水させた');
     } else {
       chg({hyg:-10});
-      await say(H('下水管が壊れていて、{汚水が逆流してきました。}'), {ic:'💦', lb:'逆流', pal:'bad'});
+      await say(H('下水管が壊れていて、{汚水が逆流してきました。}'), {img:'toilet_backflow', ic:'💦', lb:'逆流', pal:'bad'});
       trouble('断水中にトイレを流し、汚水が逆流した');
     }
     point('大地震の後は、排水管や下水管の安全が確認されるまでトイレを流さない。携帯トイレを使う。');
   } else if(tq === 'kit'){
-    chg({toilet:-1}); await say(H('携帯トイレを使いました。固める薬が入っていて、<<においも抑えられます。>>'), {ic:'🚽', pal:'good'});
+    chg({toilet:-1}); await say(H('携帯トイレを使いました。固める薬が入っていて、<<においも抑えられます。>>'), {img:'toilet_kit', ic:'🚽', pal:'good'});
   } else if(tq === 'diy'){
     chg({hyg:-4}); await say('ポリ袋と新聞紙で、なんとかしのぎました。においが気になります。');
     point('携帯トイレがないときは、便器にポリ袋を二重にかぶせ、新聞紙などを入れて使う。');
@@ -1084,12 +1258,12 @@ async function quakeNight(){
   }
   /* 赤ちゃん */
   if(S.baby){
-    if(S.inv.baby >= 2) await say(H('赤ちゃんが泣き出しました。<br>お湯がなくてもすぐ飲める<<液体ミルク>>で、落ち着きました。'), {ic:'🍼', lb:'赤ちゃん', pal:'night'});
-    else if(S.inv.stove) await say('赤ちゃんが泣き出しました。カセットコンロでお湯をわかし、粉ミルクを作りました。', {ic:'🍼', pal:'night'});
-    else { chg({mind:-8}); await say(H('赤ちゃんが泣き出しました。{お湯がわかせず、ミルクが作れません。}'), {ic:'😭', pal:'bad'}); trouble('お湯がわかせず、赤ちゃんのミルクに困った'); point('乳幼児がいる家庭は、お湯のいらない液体ミルクを備えておくと安心。'); }
+    if(S.inv.baby >= 2) await say(H('赤ちゃんが泣き出しました。<br>お湯がなくてもすぐ飲める<<液体ミルク>>で、落ち着きました。'), {img:'baby_liquid_milk', ic:'🍼', lb:'赤ちゃん', pal:'night'});
+    else if(S.inv.stove) await say('赤ちゃんが泣き出しました。カセットコンロでお湯をわかし、粉ミルクを作りました。', {img:'baby_stove_milk', ic:'🍼', pal:'night'});
+    else { chg({mind:-8}); await say(H('赤ちゃんが泣き出しました。{お湯がわかせず、ミルクが作れません。}'), {img:'baby_crying', ic:'😭', pal:'bad'}); trouble('お湯がわかせず、赤ちゃんのミルクに困った'); point('乳幼児がいる家庭は、お湯のいらない液体ミルクを備えておくと安心。'); }
   }
-  await say('長い夜が明けていきます。<br>防災行政無線から放送が流れてきました。', {ic:'🌅', lb:'夜明け', pal:'morning', se:'morning', mood:'calm'});
-  await say(H('[「小学校の体育館に、避難所を開設しました」]'), {ic:'📢', lb:'避難所開設', pal:'morning', se:'bell'});
+  await say('長い夜が明けていきます。<br>防災行政無線から放送が流れてきました。', {img:'dawn_town', ic:'🌅', lb:'夜明け', pal:'morning', se:'morning', mood:'calm'});
+  await say(H('[「小学校の体育館に、避難所を開設しました」]'), {img:'announce_speaker', ic:'📢', lb:'避難所開設', pal:'morning', se:'bell'});
 }
 
 /* ===================== 過ごす場所を選ぶ ===================== */
@@ -1101,16 +1275,16 @@ async function chooseMode(){
     {t:'🚗 車の中で過ごす(車中泊)', sub:'プライバシーは守れるが、体への負担が大きい', v:'car', if:S.car},
     {t:'⛺ テントで過ごす', sub:'自宅の庭や公園に。暑さ・寒さ・雨の影響を受けやすい', v:'tent'},
     {t:'🏡 被災地の外の親戚・知人の家へ', sub:'車で数時間。道路が通れるかわからない', v:'relative', if:S.car}
-  ], {ic:'🧭', lb:'過ごす場所', pal:'morning'});
+  ], {img:'choose_mode', ic:'🧭', lb:'過ごす場所', pal:'morning'});
   S.mode = m; tl('過ごす場所:' + MODE[m].t);
   if(m === 'tent'){
     S.tentPlace = await ask('どこにテントを張りますか?', [
       {t:'自宅の庭・敷地', sub:'自宅の備蓄を使いやすい', v:'yard', if:S.home === 'house' || S.home === 'old'},
       {t:'近くの公園の広場', v:'park'},
       {t:'川沿いの河川敷', sub:'広くて静か', v:'river'}
-    ], {ic:'⛺', lb:'テントの場所', pal:'tent'});
+    ], {img:'tent_place', ic:'⛺', lb:'テントの場所', pal:'tent'});
     if(S.tentPlace === 'river'){
-      await say(H('河川敷は、雨が降ると{急に水位が上がる危険な場所}です。<br>近くの人に注意され、公園の広場に移りました。'), {ic:'🌊', lb:'危険な場所', pal:'bad'});
+      await say(H('河川敷は、雨が降ると{急に水位が上がる危険な場所}です。<br>近くの人に注意され、公園の広場に移りました。'), {img:'river_danger', ic:'🌊', lb:'危険な場所', pal:'bad'});
       chg({hp:-3}); S.tentPlace = 'park'; point('テントは河川敷・崖の下・倒れそうな建物のそばを避ける。');
     }
   }
@@ -1121,18 +1295,18 @@ async function chooseMode(){
       {t:'ブレーカーを落とし、戸締まりをして、家族の行き先をメモに残す', v:'all'},
       {t:'戸締まりだけして急いで出る', v:'lock'},
       {t:'何もせずにすぐ出る', v:'none'}
-    ], {ic:'🚪', lb:'家を出る前に', pal:'home'});
+    ], {img:'leave_breaker', ic:'🚪', lb:'家を出る前に', pal:'home'});
     S.breakerOff = (b === 'all');
     if(b === 'all') point('避難するときはブレーカーを落とす。電気が戻ったときの「通電火災」を防げる。');
     else { S.lockOnly = (b === 'lock'); }
   }
   if(leaving){
     leaveHome(); renderHud();
-    if(S.stashTotal() > 0) await say(H('持てるだけの物を持ちました。<br>残りの備蓄は[家に置いたまま]です。必要になったら取りに戻れます。'), {ic:'🎒', lb:'持ち出し', pal:'morning'});
+    if(S.stashTotal() > 0) await say(H('持てるだけの物を持ちました。<br>残りの備蓄は[家に置いたまま]です。必要になったら取りに戻れます。'), {img:'carry_out', ic:'🎒', lb:'持ち出し', pal:'morning'});
   }
-  if(m === 'car' && S.inv.water + S.inv.food > 0) await say('家の備蓄を車に積み込みました。', {ic:'🚗', pal:'car'});
+  if(m === 'car' && S.inv.water + S.inv.food > 0) await say('家の備蓄を車に積み込みました。', {img:'car_loading', ic:'🚗', pal:'car'});
   if(m === 'home' && S.house === 'danger'){
-    await say(H('{傾いた家に残るのは危険です。}<br>それでも、あなたは家に残ることにしました。'), {ic:'🏚️', lb:'危険な家', pal:'bad'});
+    await say(H('{傾いた家に残るのは危険です。}<br>それでも、あなたは家に残ることにしました。'), {img:'house_danger_stay', ic:'🏚️', lb:'危険な家', pal:'bad'});
   }
   if(m === 'relative'){
     S.breakerOff = S.breakerOff || false;
@@ -1145,24 +1319,24 @@ async function dayStart(d){
   var lbs = ['', '1日目 ― 地震の翌日', '2日目', '3日目 ― 72時間の壁', '4日目', '5日目', '6日目', '7日目 ― 1週間'];
   scene({day:d + '日目', title:M.t + 'で過ごす ' + d + '日目'});
   if(d === 7){
-    await say(H('地震から[1週間]がたちました。'), {ic:'🌄', lb:lbs[d], pal:'morning', se:'morning', mood:'hope'});
+    await say(H('地震から[1週間]がたちました。'), {img:'day7_morning', ic:'🌄', lb:lbs[d], pal:'morning', se:'morning', mood:'hope'});
     return;
   }
-  await say(H('[' + d + '日目]の朝。' + (d === 1 ? '眠れないまま、朝を迎えました。' : '')), {ic:M.ic, lb:lbs[d] + '  ・  ' + M.t, pal:M.pal, se:'morning', mood:S.hp < 40 || S.mind < 35 ? 'tense' : 'calm'});
+  await say(H('[' + d + '日目]の朝。' + (d === 1 ? '眠れないまま、朝を迎えました。' : '')), {img:'morning_' + S.mode, ic:M.ic, lb:lbs[d] + '  ・  ' + M.t, pal:M.pal, se:'morning', mood:S.hp < 40 || S.mind < 35 ? 'tense' : 'calm'});
 }
 
 /* ===================== 全員に共通の出来事 ===================== */
 async function commonEvent(d){
   if(d === 1){
     scene({se:'quake', shake:1});
-    await say(H('グラグラッ! [大きな余震]です。'), {ic:'📳', lb:'余震', pal:'quake'});
+    await say(H('グラグラッ! [大きな余震]です。'), {img:'aftershock', ic:'📳', lb:'余震', pal:'quake'});
     if(S.mode === 'home' && !S.inv.fixed){ chg({hp:-5}); await say(H('{倒れかけていた本棚がさらに倒れ、腕を打ちました。}'), {pal:'bad'}); }
     if(S.n > 1 || S.mode !== 'relative'){
       var c = await ask('離れて暮らす家族や知人に、無事を知らせたい。どうする?', [
         {t:'つながるまで電話をかけ続ける', v:'call'},
         {t:'災害用伝言ダイヤル(171)や災害用伝言板、SNSで知らせる', v:'171'},
         {t:'落ち着くまで連絡しない', v:'none'}
-      ], {ic:'☎️', lb:'安否の連絡', pal:'day'});
+      ], {img:'safety_message', ic:'☎️', lb:'安否の連絡', pal:'day'});
       if(c === 'call'){ chg({batt:-15, mind:-4}); await say(H('{電話は混み合っていて、なかなかつながりません。}電池だけが減っていきます。'), {pal:'bad'}); trouble('電話がつながらず、電池を使ってしまった'); point('災害時の安否確認は、災害用伝言ダイヤル(171)や災害用伝言板・SNSで。電話をかけ続けると電池を使い、回線もふさぐ。'); }
       else if(c === '171'){ chg({mind:+4, batt:-3}); await say(H('伝言を残しました。<<家族から「よかった」と返事が届きました。>>'), {pal:'good'}); point('災害用伝言ダイヤル171・災害用伝言板を、ふだんから家族で使う練習をしておく。'); }
       else { chg({mind:-3}); await say('連絡が取れず、遠くの家族も心配しているはずです。'); }
@@ -1172,24 +1346,24 @@ async function commonEvent(d){
     var dm = await ask('SNSに「〇〇公園で、水とパンを無料で配っている!」という投稿が広まっています。どうする?', [
       {t:'すぐに向かう', v:'go'},
       {t:'市や町の公式の情報で、本当かどうか確かめる', v:'check'}
-    ], {ic:'📲', lb:'うわさ', pal:'day'});
-    if(dm === 'go'){ chg({hp:-6, mind:-6}); await say(H('公園に行ってみると、{配布はしていませんでした。}同じ投稿を見た人が大勢集まって困っています。'), {ic:'😓', pal:'bad'}); trouble('デマを信じて、むだに歩き回った'); point('災害時はデマが広がる。自治体・警察・報道機関など公式の情報で確かめる。'); }
+    ], {img:'rumor_sns', ic:'📲', lb:'うわさ', pal:'day'});
+    if(dm === 'go'){ chg({hp:-6, mind:-6}); await say(H('公園に行ってみると、{配布はしていませんでした。}同じ投稿を見た人が大勢集まって困っています。'), {img:'rumor_crowd', ic:'😓', pal:'bad'}); trouble('デマを信じて、むだに歩き回った'); point('災害時はデマが広がる。自治体・警察・報道機関など公式の情報で確かめる。'); }
     else { await say(H(hasInfo() ? '市の公式アカウントを見ると、<<「そのような配布はしていません」と注意が出ていました。>>' : '電池がなく確かめられませんでしたが、むやみに動かないことにしました。'), {pal:'good'}); }
   }
   if(d === 3){
-    await say(H('地震から[72時間]。救助の目安とされる時間がたちました。<br>国や県からの[支援物資]が、避難所に届き始めています。'), {ic:'🚛', lb:'支援物資', pal:'day', se:'bell'});
+    await say(H('地震から[72時間]。救助の目安とされる時間がたちました。<br>国や県からの[支援物資]が、避難所に届き始めています。'), {img:'supply_truck', ic:'🚛', lb:'支援物資', pal:'day', se:'bell'});
     if(S.mode !== 'shelter' && S.mode !== 'relative' && !S.registered){
-      await say(H('ただし、物資や情報は、[避難所に登録した人]を中心に配られます。<br>自宅や車・テントで過ごす人は、避難所で「避難所以外で過ごしています」と登録すると、物資を受け取れます。'), {ic:'📝', pal:'day'});
+      await say(H('ただし、物資や情報は、[避難所に登録した人]を中心に配られます。<br>自宅や車・テントで過ごす人は、避難所で「避難所以外で過ごしています」と登録すると、物資を受け取れます。'), {img:'register_desk', ic:'📝', pal:'day'});
       point('在宅避難・車中泊でも、近くの避難所に登録すると物資や情報を受け取れる。');
     }
   }
   if(d === 4){
-    await say(H('ついに、[電気が復旧しました!]'), {ic:'💡', lb:'停電解消', pal:'day', se:'ok', mood:'hope'});
+    await say(H('ついに、[電気が復旧しました!]'), {img:'power_restored', ic:'💡', lb:'停電解消', pal:'day', se:'ok', mood:'hope'});
     S.power = true;
     if(S.mode !== 'home' && S.mode !== 'shelter' && S.house !== 'ok' && !S.breakerOff && S.mode !== 'car'){
       if(rnd() < 0.55){
         S.fire = true; scene({flash:'#ff8a1e'});
-        await say(H('しかし、近所の人から連絡が。<br>{「あなたの家から煙が出ている!」}<br>倒れた家電や傷んだ配線に電気が流れ、[通電火災]が起きたのです。'), {ic:'🔥', lb:'通電火災', pal:'bad', mood:'danger'});
+        await say(H('しかし、近所の人から連絡が。<br>{「あなたの家から煙が出ている!」}<br>倒れた家電や傷んだ配線に電気が流れ、[通電火災]が起きたのです。'), {img:'tsuuden_fire', ic:'🔥', lb:'通電火災', pal:'bad', mood:'danger'});
         chg({mind:-25}); trouble('ブレーカーを落とさずに家を出て、通電火災が起きた');
         point('避難で家を空けるときは、必ずブレーカーを落とす(通電火災の防止)。');
       }
@@ -1197,8 +1371,8 @@ async function commonEvent(d){
       var br = await ask('家の中では、倒れた電気ストーブや傷んだコードがあります。電気が戻る前にどうする?', [
         {t:'ブレーカーを落としてから、家電やコードを点検する', v:'ok'},
         {t:'そのままにしておく', v:'ng'}
-      ], {ic:'🔌', lb:'通電火災に注意', pal:'home'});
-      if(br === 'ng' && rnd() < 0.5){ chg({hp:-6, mind:-12}); await say(H('{倒れたストーブから煙が!}あわてて消し止めました。'), {ic:'🔥', pal:'bad'}); trouble('通電火災を起こしかけた'); point('電気の復旧時は、ブレーカーを落とし、家電の点検をしてから戻す。'); }
+      ], {img:'breaker_check', ic:'🔌', lb:'通電火災に注意', pal:'home'});
+      if(br === 'ng' && rnd() < 0.5){ chg({hp:-6, mind:-12}); await say(H('{倒れたストーブから煙が!}あわてて消し止めました。'), {img:(S.mode === 'home' || S.mode === 'tent') ? 'scam_visit' : 'scam_phone', ic:'🔥', pal:'bad'}); trouble('通電火災を起こしかけた'); point('電気の復旧時は、ブレーカーを落とし、家電の点検をしてから戻す。'); }
       else if(br === 'ok') await say('点検してから電気を戻しました。安全に使えます。', {pal:'good'});
     }
     if(S.mode === 'home' && S.house === 'danger'){ S.power = false; }
@@ -1209,15 +1383,15 @@ async function commonEvent(d){
       {t:'その場では決めず、市の相談窓口や信頼できる業者に相談する', v:'ok', if:S.mode === 'home' || S.mode === 'tent'},
       {t:'電話で「被災者支援の義援金」を求められた。言われたとおり振り込む', v:'pay2', if:!(S.mode === 'home' || S.mode === 'tent')},
       {t:'電話の相手は信用せず、切ってから家族や警察相談専用電話(#9110)に相談する', v:'ok2', if:!(S.mode === 'home' || S.mode === 'tent')}
-    ], {ic:'🕵️', lb:'悪質な業者・詐欺', pal:'day', mood:'tense'});
-    if(sc === 'pay' || sc === 'pay2'){ chg({yen:sc === 'pay' ? 300000 : 50000, mind:-15}); await say(H('{お金を払ったあと、相手とは連絡が取れなくなりました。}<br>災害のあとは、被災者をねらう悪質な業者や詐欺が増えます。'), {ic:'💸', pal:'bad'}); trouble('災害に便乗した悪質な業者・詐欺にお金を取られた'); point('災害後は、点検商法・高額な修理・義援金詐欺に注意。その場で契約・支払いをしない。'); }
+    ], {img:(S.mode === 'home' || S.mode === 'tent') ? 'scam_visit' : 'scam_phone', ic:'🕵️', lb:'悪質な業者・詐欺', pal:'day', mood:'tense'});
+    if(sc === 'pay' || sc === 'pay2'){ chg({yen:sc === 'pay' ? 300000 : 50000, mind:-15}); await say(H('{お金を払ったあと、相手とは連絡が取れなくなりました。}<br>災害のあとは、被災者をねらう悪質な業者や詐欺が増えます。'), {img:'scam_money_lost', ic:'💸', pal:'bad'}); trouble('災害に便乗した悪質な業者・詐欺にお金を取られた'); point('災害後は、点検商法・高額な修理・義援金詐欺に注意。その場で契約・支払いをしない。'); }
     else await say(H('<<その場で決めずに正解でした。>>災害のあとは、被災者をねらう悪質な業者や詐欺が増えます。'), {pal:'good'});
   }
   if(d === 6){
     var mt = await ask('疲れとストレスが、たまってきました。どうする?', [
       {t:'家族や近くの人と話す・保健師の相談を受ける', v:'talk'},
       {t:'自分の気持ちはがまんして、黙々と過ごす', v:'hold'}
-    ], {ic:'🫂', lb:'こころの疲れ', pal:'day'});
+    ], {img:'stress_talk', ic:'🫂', lb:'こころの疲れ', pal:'day'});
     if(mt === 'talk'){ chg({mind:+10}); await say(H('話を聞いてもらうだけで、<<少し気持ちが軽くなりました。>>'), {pal:'good'}); point('つらい気持ちはがまんせず、誰かに話す。避難所には保健師などの相談窓口がある。'); }
     else { chg({mind:-8}); await say(H('{眠れない日が続き、気持ちが沈んでいきます。}'), {pal:'bad'}); }
   }
@@ -1231,75 +1405,75 @@ async function modeEvent(d){
 var MODE_EV = {
   shelter:{
     1: async function(){
-      await say('体育館は、近所の人たちでいっぱいです。床は硬く、' + (S.season === 'winter' ? 'しんしんと冷えます。' : S.season === 'summer' ? '蒸し暑く、汗がひきません。' : '少し肌寒く感じます。'), {ic:'🏫', lb:'避難所', pal:'shelter'});
+      await say('体育館は、近所の人たちでいっぱいです。床は硬く、' + (S.season === 'winter' ? 'しんしんと冷えます。' : S.season === 'summer' ? '蒸し暑く、汗がひきません。' : '少し肌寒く感じます。'), {img:'shelter_gym', ic:'🏫', lb:'避難所', pal:'shelter'});
       var p = await ask('寝る場所はどこにしますか?', [
         {t:'出入口の近く', sub:'トイレに行きやすい', v:'door'},
         {t:'通路沿い', v:'aisle'},
         {t:'壁ぎわの奥', sub:'落ち着けるが、トイレが遠い', v:'wall'}
-      ], {ic:'🛏️', lb:'寝る場所', pal:'shelter'});
+      ], {img:'shelter_sleep_spot', ic:'🛏️', lb:'寝る場所', pal:'shelter'});
       if(p === 'door'){ chg({mind:-6, hp:S.season === 'winter' ? -5 : -1}); await say(H('{人の出入りが多く、ドアが開くたびに' + (S.season === 'winter' ? '冷たい風が入ってきます。' : '目が覚めます。') + '}')); }
       else if(p === 'aisle'){ chg({mind:-5}); await say(H('{夜中も人が通り、足音で何度も目が覚めます。}')); }
       else { chg({mind:+2}); await say('壁ぎわは少し落ち着けます。ただ、トイレまでは遠くなりました。'); if(S.elder){ chg({hp:-3}); await say(H('{高齢の親には、トイレまでの距離がつらそうです。}')); } }
       if(S.pet){
-        if(S.inv.petkit){ await say(H('犬は、避難所の外のペットスペースで過ごすことになりました。<br><<ケージとリードを用意していたので、すぐに預けられました。>>'), {ic:'🐕', pal:'shelter'}); }
-        else { chg({mind:-12}); await say(H('ペットは体育館の中に入れません。{ケージもリードもなく、犬をどうするか困ってしまいました。}'), {ic:'🐕', pal:'bad'}); trouble('ペットの居場所がなく困った'); point('ペットと避難するなら、ケージ・リード・フード・トイレ用品を用意し、ふだんからケージに慣らしておく。'); }
+        if(S.inv.petkit){ await say(H('犬は、避難所の外のペットスペースで過ごすことになりました。<br><<ケージとリードを用意していたので、すぐに預けられました。>>'), {img:'shelter_pet_space', ic:'🐕', pal:'shelter'}); }
+        else { chg({mind:-12}); await say(H('ペットは体育館の中に入れません。{ケージもリードもなく、犬をどうするか困ってしまいました。}'), {img:'shelter_pet_trouble', ic:'🐕', pal:'bad'}); trouble('ペットの居場所がなく困った'); point('ペットと避難するなら、ケージ・リード・フード・トイレ用品を用意し、ふだんからケージに慣らしておく。'); }
       }
     },
     2: async function(){
-      await say(H('断水で、学校のトイレは水が流せません。{トイレはあっという間に汚れ、においが体育館まで広がっています。}'), {ic:'🚽', lb:'トイレ問題', pal:'shelter'});
+      await say(H('断水で、学校のトイレは水が流せません。{トイレはあっという間に汚れ、においが体育館まで広がっています。}'), {img:'shelter_toilet_dirty', ic:'🚽', lb:'トイレ問題', pal:'shelter'});
       var t = await ask('どうする?', [
         {t:'自分の携帯トイレを使う', sub:'あと ' + S.inv.toilet + '回分', v:'kit', if:S.inv.toilet > 0},
         {t:'トイレに行かなくてすむよう、水を飲むのを控える', v:'nowater'},
         {t:'トイレの使い方のルールづくりと掃除当番に協力する', v:'help'}
-      ], {ic:'🚽', lb:'どうする?', pal:'shelter'});
+      ], {img:'shelter_toilet_rules', ic:'🚽', lb:'どうする?', pal:'shelter'});
       if(t === 'kit'){ chg({mind:+3}); await say(H('<<自分の携帯トイレがあって、本当に助かりました。>>'), {pal:'good'}); }
-      else if(t === 'nowater'){ chg({hp:-12}); await say(H('{水分が足りず、体調を崩してしまいました。}脱水や、血の固まりができる「エコノミークラス症候群」の原因にもなります。'), {ic:'🥵', pal:'bad'}); trouble('トイレを避けて水分を控え、体調を崩した'); point('トイレを我慢するために水を控えるのは危険。携帯トイレを多めに備える。'); }
+      else if(t === 'nowater'){ chg({hp:-12}); await say(H('{水分が足りず、体調を崩してしまいました。}脱水や、血の固まりができる「エコノミークラス症候群」の原因にもなります。'), {img:'dehydration', ic:'🥵', pal:'bad'}); trouble('トイレを避けて水分を控え、体調を崩した'); point('トイレを我慢するために水を控えるのは危険。携帯トイレを多めに備える。'); }
       else { chg({hyg:+6, mind:+3, hp:-2}); await say(H('みんなで使い方を決めて掃除をすると、<<少しずつきれいになりました。>>'), {pal:'good'}); }
     },
     3: async function(){
-      await say(H('食事は、冷たいおにぎりや菓子パンが中心。{温かい食事はなかなか出ません。}'), {ic:'🍙', lb:'避難所の食事', pal:'shelter'});
+      await say(H('食事は、冷たいおにぎりや菓子パンが中心。{温かい食事はなかなか出ません。}'), {img:'shelter_cold_meal', ic:'🍙', lb:'避難所の食事', pal:'shelter'});
       if(S.kids || S.baby){ chg({mind:-5}); await say(H('子どもは食べ慣れない食事に{ぐずりがち}です。')); }
-      var h = await ask('炊き出しの手伝いを頼まれました。', [{t:'手伝う', v:'y'}, {t:'休んでいたいので断る', v:'n'}], {ic:'🍲', pal:'shelter'});
+      var h = await ask('炊き出しの手伝いを頼まれました。', [{t:'手伝う', v:'y'}, {t:'休んでいたいので断る', v:'n'}], {img:'shelter_soup', ic:'🍲', pal:'shelter'});
       if(h === 'y'){ chg({mind:+8, hp:-3}); await say(H('久しぶりの<<温かい豚汁>>。みんなの顔が少し明るくなりました。'), {pal:'good'}); }
       else chg({hp:+2});
     },
     4: async function(){
-      await say(H('避難所で{胃腸炎とかぜがはやり始めました。}'), {ic:'🦠', lb:'感染症', pal:'shelter', mood:'tense'});
+      await say(H('避難所で{胃腸炎とかぜがはやり始めました。}'), {img:'shelter_infection', ic:'🦠', lb:'感染症', pal:'shelter', mood:'tense'});
       var hh = await ask('どうする?', [
         {t:'手洗い・消毒・マスクを徹底し、具合の悪い人とは場所を分けてもらう', v:'ok'},
         {t:'気にせず過ごす', v:'ng'}
-      ], {ic:'🧼', pal:'shelter'});
+      ], {img:'shelter_handwash', ic:'🧼', pal:'shelter'});
       var risk = (hh === 'ng' ? 0.6 : 0.2) + (S.hyg < 50 ? 0.3 : 0) - (S.inv.wipes ? 0.1 : 0);
-      if(rnd() < risk){ S.infected = true; chg({hp:-15, mind:-6}); await say(H('{家族が熱を出し、おなかをこわしてしまいました。}'), {ic:'🤒', pal:'bad'}); trouble('避難所で感染症にかかった'); point('避難所では手洗い・消毒・マスクを。ウェットティッシュや消毒液を持ち出し袋に。'); }
+      if(rnd() < risk){ S.infected = true; chg({hp:-15, mind:-6}); await say(H('{家族が熱を出し、おなかをこわしてしまいました。}'), {img:'sick_fever', ic:'🤒', pal:'bad'}); trouble('避難所で感染症にかかった'); point('避難所では手洗い・消毒・マスクを。ウェットティッシュや消毒液を持ち出し袋に。'); }
       else await say(H('<<気をつけていたおかげで、うつらずにすみました。>>'), {pal:'good'});
     },
     5: async function(){
       var cause = S.baby ? '夜中に赤ちゃんが泣くと、周りに気をつかって眠れません。' : '夜も明かりがつき、いびきや話し声で眠れません。';
-      await say(H('{' + cause + '}'), {ic:'😪', lb:'眠れない', pal:'shelter'});
+      await say(H('{' + cause + '}'), {img:'shelter_sleepless', ic:'😪', lb:'眠れない', pal:'shelter'});
       if(S.inv.earplug){ chg({mind:+2}); await say(H('持ち出し袋の<<耳せんとアイマスク>>が役に立ちました。'), {pal:'good'}); }
       else { chg({mind:-8, hp:-4}); point('避難所では耳せん・アイマスクがあると眠りやすい。'); }
       if(S.baby){ await say('授乳や着替えができる場所を設けてもらえないか、避難所の運営の人に相談しました。'); }
     },
     6: async function(){
-      var r = await ask('避難所の運営を手伝ってほしい、と声がかかりました。', [{t:'できる範囲で手伝う', v:'y'}, {t:'今は余裕がない', v:'n'}], {ic:'🙋', lb:'助け合い', pal:'shelter'});
+      var r = await ask('避難所の運営を手伝ってほしい、と声がかかりました。', [{t:'できる範囲で手伝う', v:'y'}, {t:'今は余裕がない', v:'n'}], {img:'shelter_volunteer', ic:'🙋', lb:'助け合い', pal:'shelter'});
       if(r === 'y'){ chg({mind:+6, hp:-3}); await say(H('物資の仕分けを手伝いました。<<顔見知りが増え、心強くなりました。>>'), {pal:'good'}); }
     }
   },
   home:{
     1: async function(){
-      await say(H('部屋を片付けます。' + (S.inv.fixed ? '' : '{割れたガラスで危ないので、家の中でも靴をはきます。}')), {ic:'🧹', lb:'片付け', pal:'home'});
-      await say(H('停電で、冷蔵庫の中の物が傷み始めます。<br>[冷蔵庫の物から先に食べる]ことにしました。'), {ic:'🧊', lb:'冷蔵庫', pal:'home'});
+      await say(H('部屋を片付けます。' + (S.inv.fixed ? '' : '{割れたガラスで危ないので、家の中でも靴をはきます。}')), {img:'home_cleanup', ic:'🧹', lb:'片付け', pal:'home'});
+      await say(H('停電で、冷蔵庫の中の物が傷み始めます。<br>[冷蔵庫の物から先に食べる]ことにしました。'), {img:'home_fridge', ic:'🧊', lb:'冷蔵庫', pal:'home'});
       chg({food:2 * S.n});
       point('停電したら、冷蔵庫の物から先に食べ、備蓄は後に回す。');
-      if(S.home === 'high'){ chg({hp:-5}); await say(H('エレベーターが止まり、{10階以上を階段で上り下りするのは、とても大変です。}'), {ic:'🏢', pal:'home'}); }
+      if(S.home === 'high'){ chg({hp:-5}); await say(H('エレベーターが止まり、{10階以上を階段で上り下りするのは、とても大変です。}'), {img:'home_stairs', ic:'🏢', pal:'home'}); }
     },
     2: async function(){
-      if(S.inv.toilet >= S.n * 5) { await say(H('断水でトイレは流せませんが、<<備えた簡易トイレがあるので、家のトイレの便器を使って用を足せます。>>'), {ic:'🚽', lb:'トイレ', pal:'home'}); return; }
+      if(S.inv.toilet >= S.n * 5) { await say(H('断水でトイレは流せませんが、<<備えた簡易トイレがあるので、家のトイレの便器を使って用を足せます。>>'), {img:'home_toilet_kit', ic:'🚽', lb:'トイレ', pal:'home'}); return; }
       var t = await ask('断水が続き、トイレの問題が深刻に。簡易トイレが足りません。どうする?', [
         {t:'お風呂の残り湯でバケツで流す', v:'flush'},
         {t:'便器にポリ袋をかぶせ、新聞紙などを入れて使う', v:'diy'},
         {t:'近くの避難所や公園のトイレまで行く', v:'go'}
-      ], {ic:'🚽', lb:'トイレ', pal:'home'});
+      ], {img:'home_toilet_trouble', ic:'🚽', lb:'トイレ', pal:'home'});
       if(t === 'flush'){
         if(S.home === 'low' || S.home === 'high' || S.home === 'apt'){ chg({hyg:-12, mind:-12}); await say(H('{排水管が壊れていて、下の階に水漏れしてしまいました。}'), {pal:'bad'}); trouble('断水中にトイレを流し、下の階に漏水させた'); }
         else { chg({hyg:-8}); await say(H('{流した物が詰まり、使えなくなってしまいました。}'), {pal:'bad'}); }
@@ -1308,32 +1482,32 @@ var MODE_EV = {
       else { chg({hp:-5, hyg:-4}); await say(H('トイレは遠く、{夜は暗くて危険}。行列もできています。')); }
     },
     3: async function(){
-      if(S.inv.stove){ chg({mind:+6}); await say(H('カセットコンロでお湯をわかし、<<温かいスープとごはん>>。家族がほっとした表情になりました。'), {ic:'🍲', lb:'温かい食事', pal:'home'}); }
-      else { chg({mind:-4}); await say(H('ガスが止まり、{温かい物が食べられません。}冷たい食事が続きます。'), {ic:'🥶', lb:'食事', pal:'home'}); point('カセットコンロとボンベがあると、温かい食事でこころも落ち着く。'); }
+      if(S.inv.stove){ chg({mind:+6}); await say(H('カセットコンロでお湯をわかし、<<温かいスープとごはん>>。家族がほっとした表情になりました。'), {img:'home_stove_meal', ic:'🍲', lb:'温かい食事', pal:'home'}); }
+      else { chg({mind:-4}); await say(H('ガスが止まり、{温かい物が食べられません。}冷たい食事が続きます。'), {img:'home_cold_meal', ic:'🥶', lb:'食事', pal:'home'}); point('カセットコンロとボンベがあると、温かい食事でこころも落ち着く。'); }
     },
     4: async function(){
       if(S.house === 'danger'){
         scene({se:'quake', shake:2});
-        await say(H('また大きな余震。{家がギシギシと音を立て、さらに傾きました。}<br>市の調査員が来て、玄関に[「危険」の赤い紙(応急危険度判定)]をはりました。'), {ic:'🟥', lb:'危険な建物', pal:'bad', mood:'danger'});
+        await say(H('また大きな余震。{家がギシギシと音を立て、さらに傾きました。}<br>市の調査員が来て、玄関に[「危険」の赤い紙(応急危険度判定)]をはりました。'), {img:'home_red_tag', ic:'🟥', lb:'危険な建物', pal:'bad', mood:'danger'});
         chg({hp:-8, mind:-12}); trouble('傾いた家に残り、危険な目にあった');
         point('古い木造住宅は、耐震診断・耐震補強を。応急危険度判定で「危険」の建物には入らない。');
-        await say(H('この家にはもう住めません。[避難所へ移ることにしました。]'), {ic:'🏫', pal:'shelter'});
+        await say(H('この家にはもう住めません。[避難所へ移ることにしました。]'), {img:'move_to_shelter', ic:'🏫', pal:'shelter'});
         leaveHome(); S.mode = 'shelter'; S.moved.push('home→shelter'); tl('家が「危険」と判定され、避難所へ移った'); renderHud();
         return;
       }
-      if(S.home === 'high'){ chg({hp:-6}); await say(H('給水車で受け取った水を、{階段で10階以上まで運ぶ}のは重労働です。'), {ic:'🏢', lb:'水運び', pal:'home'}); point('高い階に住む人は、エレベーターが止まると水運びが大変。家に多めに水を備える。'); }
-      else await say('余震は続いていますが、家は持ちこたえています。', {ic:'🏠', pal:'home'});
+      if(S.home === 'high'){ chg({hp:-6}); await say(H('給水車で受け取った水を、{階段で10階以上まで運ぶ}のは重労働です。'), {img:'home_water_carry', ic:'🏢', lb:'水運び', pal:'home'}); point('高い階に住む人は、エレベーターが止まると水運びが大変。家に多めに水を備える。'); }
+      else await say('余震は続いていますが、家は持ちこたえています。', {img:'home_holding', ic:'🏠', pal:'home'});
     },
     5: async function(){
       var s = await ask('夜、近所で空き巣の被害があったと聞きました。どうする?', [
         {t:'戸締まりをし、近所の人と声をかけ合って見回る', v:'ok'},
         {t:'気にしない', v:'ng'}
-      ], {ic:'🔦', lb:'防犯', pal:'home', mood:'tense'});
+      ], {img:'home_patrol', ic:'🔦', lb:'防犯', pal:'home', mood:'tense'});
       if(s === 'ok'){ chg({mind:+3}); await say(H('<<近所で声をかけ合うと、心強くなりました。>>'), {pal:'good'}); }
       else { chg({mind:-6}); await say(H('{夜中の物音に、何度も目が覚めました。}')); }
     },
     6: async function(){
-      var h = await ask('隣の一人暮らしのおばあさんの姿を、地震のあと見ていません。', [{t:'声をかけに行く', v:'y'}, {t:'自分のことで精いっぱい', v:'n'}], {ic:'👵', lb:'ご近所', pal:'home'});
+      var h = await ask('隣の一人暮らしのおばあさんの姿を、地震のあと見ていません。', [{t:'声をかけに行く', v:'y'}, {t:'自分のことで精いっぱい', v:'n'}], {img:'home_neighbor', ic:'👵', lb:'ご近所', pal:'home'});
       if(h === 'y'){ chg({mind:+8}); await say(H('おばあさんは無事でしたが、水がなくて困っていました。' + (S.inv.water > dailyNeed().water * 2 ? '<<水を分けると、とても喜んでくれました。>>' : '避難所で物資がもらえることを伝えました。')), {pal:'good'}); if(S.inv.water > dailyNeed().water * 2) chg({water:-2}); point('災害時は、ご近所の高齢者や一人暮らしの人に声をかける。'); }
     }
   },
@@ -1343,23 +1517,23 @@ var MODE_EV = {
         {t:'避難所(学校)の駐車場', sub:'物資や情報、トイレが近い', v:'school'},
         {t:'大型スーパーの駐車場', v:'mall'},
         {t:'自宅の前', v:'home'}
-      ], {ic:'🅿️', lb:'駐車場所', pal:'car'});
+      ], {img:'car_parking', ic:'🅿️', lb:'駐車場所', pal:'car'});
       if(S.carSpot === 'school'){ S.registered = true; await say(H('避難所の受付で「車中泊」と伝えて登録しました。<<物資や情報を受け取れます。>>'), {pal:'good'}); }
-      await say(H('座席で寝るのは窮屈で、{足を伸ばせません。}'), {ic:'🚗', lb:'車中泊', pal:'car'});
+      await say(H('座席で寝るのは窮屈で、{足を伸ばせません。}'), {img:'car_cramped', ic:'🚗', lb:'車中泊', pal:'car'});
       chg({hp:-4, mind:-3});
     },
     2: async function(){
-      await say(H('{足がむくみ、ふくらはぎが痛みます。}'), {ic:'🦵', lb:'足のむくみ', pal:'car', mood:'tense'});
+      await say(H('{足がむくみ、ふくらはぎが痛みます。}'), {img:'car_legs', ic:'🦵', lb:'足のむくみ', pal:'car', mood:'tense'});
       var e = await ask('どうする?', [
         {t:'こまめに水を飲み、ときどき車の外を歩いて、足を動かす', v:'ok'},
         {t:'トイレに行きたくないので、水を控えてじっとしている', v:'ng'}
-      ], {ic:'🚶', pal:'car'});
+      ], {img:'car_stretch', ic:'🚶', pal:'car'});
       if(e === 'ok'){ S.exercised = true; chg({hp:+3}); await say(H('<<歩いたり足首を回したりすると、むくみが楽になりました。>>'), {pal:'good'}); point('車中泊は、水分をとり、こまめに歩いて足を動かす(エコノミークラス症候群の予防)。'); }
-      else { chg({hp:-20, mind:-8}); await say(H('{突然、胸が苦しくなり、息切れが……。}<br>足にできた血の固まりが肺に流れる「エコノミークラス症候群」の疑いで、救護所で手当てを受けました。'), {ic:'🚑', pal:'bad', flash:true}); trouble('車中泊でエコノミークラス症候群になりかけた'); point('車中泊でエコノミークラス症候群になる人が多い。水分をとり、足を動かす。'); }
+      else { chg({hp:-20, mind:-8}); await say(H('{突然、胸が苦しくなり、息切れが……。}<br>足にできた血の固まりが肺に流れる「エコノミークラス症候群」の疑いで、救護所で手当てを受けました。'), {img:'car_dvt_aid', ic:'🚑', pal:'bad', flash:true}); trouble('車中泊でエコノミークラス症候群になりかけた'); point('車中泊でエコノミークラス症候群になる人が多い。水分をとり、足を動かす。'); }
     },
     3: async function(){
-      await say(H('ガソリンスタンドに、{何百メートルも車の列}ができています。<br>ガソリンは残り[' + Math.round(S.inv.gas) + '%]。'), {ic:'⛽', lb:'ガソリン', pal:'car'});
-      var g = await ask('どうする?', [{t:'列に並んで給油する', sub:'3時間待ち', v:'q'}, {t:'エンジンをなるべくかけずに節約する', v:'save'}], {ic:'⛽', pal:'car'});
+      await say(H('ガソリンスタンドに、{何百メートルも車の列}ができています。<br>ガソリンは残り[' + Math.round(S.inv.gas) + '%]。'), {img:'gas_queue', ic:'⛽', lb:'ガソリン', pal:'car'});
+      var g = await ask('どうする?', [{t:'列に並んで給油する', sub:'3時間待ち', v:'q'}, {t:'エンジンをなるべくかけずに節約する', v:'save'}], {img:'gas_queue', ic:'⛽', pal:'car'});
       if(g === 'q'){ chg({gas:+35, hp:-4, wait:3}); await say('3時間並んで、ようやく給油できました。(1台あたりの量が制限されていました)'); }
       else await say('エンジンを切り、毛布や服で' + (S.season === 'summer' ? '暑さ' : '寒さ') + 'をしのぎます。');
       if(!S.inv.cash && S.inv.gas < 50) { point('停電中はカードや電子マネーが使えないことがある。現金(小銭)も用意する。'); }
@@ -1369,93 +1543,93 @@ var MODE_EV = {
         var w = await ask('夜は氷点下。寒くて眠れません。どうする?', [
           {t:'エンジンをかけて暖房をつけたまま、窓を閉めて眠る', v:'ng'},
           {t:'寝る前に暖を取り、エンジンを止めて、毛布や寝袋にくるまる', v:'ok'}
-        ], {ic:'🥶', lb:'寒い夜', pal:'winter'});
-        if(w === 'ng'){ chg({hp:-18, gas:-20}); await say(H('翌朝、{頭痛と吐き気}。マフラーのまわりにがれきが積もり、{排気ガスが車内に入っていたのです。}一酸化炭素中毒の一歩手前でした。'), {ic:'☠️', pal:'bad', flash:true}); trouble('車の暖房をつけたまま眠り、一酸化炭素中毒になりかけた'); point('車の中でエンジンをかけたまま眠らない。マフラーのまわりがふさがると一酸化炭素中毒の危険。'); }
+        ], {img:'car_cold_night', ic:'🥶', lb:'寒い夜', pal:'winter'});
+        if(w === 'ng'){ chg({hp:-18, gas:-20}); await say(H('翌朝、{頭痛と吐き気}。マフラーのまわりにがれきが積もり、{排気ガスが車内に入っていたのです。}一酸化炭素中毒の一歩手前でした。'), {img:'car_co', ic:'☠️', pal:'bad', flash:true}); trouble('車の暖房をつけたまま眠り、一酸化炭素中毒になりかけた'); point('車の中でエンジンをかけたまま眠らない。マフラーのまわりがふさがると一酸化炭素中毒の危険。'); }
         else { chg({hp:S.inv.climate ? -1 : -6}); await say(S.inv.climate ? '寝袋のおかげで、なんとか眠れました。' : '毛布にくるまっても、寒さで何度も目が覚めました。'); }
       } else if(S.season === 'summer'){
-        await say(H('日中の車内は、{40℃を超える暑さ}。窓を開けても熱がこもります。'), {ic:'🥵', lb:'暑さ', pal:'summer'});
+        await say(H('日中の車内は、{40℃を超える暑さ}。窓を開けても熱がこもります。'), {img:'car_heat', ic:'🥵', lb:'暑さ', pal:'summer'});
         chg({hp:S.inv.climate ? -4 : -10}); point('夏の車中泊は熱中症に注意。日中は日陰や涼しい施設で過ごす。');
       } else { chg({hp:-3}); await say('狭い車内での生活に、体が悲鳴をあげています。'); }
     },
     5: async function(){
-      await say(H('近くの車で{車上荒らし}があったそうです。<br>貴重品は身につけ、車を離れるときは必ず鍵をかけることにしました。'), {ic:'🔒', lb:'防犯', pal:'car'});
+      await say(H('近くの車で{車上荒らし}があったそうです。<br>貴重品は身につけ、車を離れるときは必ず鍵をかけることにしました。'), {img:'car_security', ic:'🔒', lb:'防犯', pal:'car'});
       chg({mind:-3});
     },
     6: async function(){
-      chg({mind:-5}); await say(H('{浅い眠りが続き、疲れがたまっています。}'), {ic:'😩', lb:'疲れ', pal:'car'});
+      chg({mind:-5}); await say(H('{浅い眠りが続き、疲れがたまっています。}'), {img:'car_tired', ic:'😩', lb:'疲れ', pal:'car'});
       if(!S.exercised){ chg({hp:-8}); await say(H('{足のむくみもひどくなってきました。}')); }
     }
   },
   tent:{
     1: async function(){
-      await say(H('テントを張りました。' + (S.tentPlace === 'yard' ? '自宅の庭なので、家の備蓄を取りに行きやすいのは安心です。' : '公園の広場には、ほかにもテントが並んでいます。')), {ic:'⛺', lb:'テント', pal:'tent'});
+      await say(H('テントを張りました。' + (S.tentPlace === 'yard' ? '自宅の庭なので、家の備蓄を取りに行きやすいのは安心です。' : '公園の広場には、ほかにもテントが並んでいます。')), {img:'tent_setup', ic:'⛺', lb:'テント', pal:'tent'});
       if(!S.inv.climate){ chg({hp:-5}); await say(H('{地面がかたく冷たくて、ほとんど眠れませんでした。}マットや寝袋があれば……。')); point('テントで過ごすなら、マット・寝袋など地面からの冷えを防ぐ物が必要。'); }
     },
     2: async function(){
       scene({se:'rain'});
-      await say(H('夜、{強い雨}が降り出しました。{テントの中に水がしみ込み、寝袋がぬれてしまいました。}'), {ic:'🌧️', lb:'雨', pal:'tent', mood:'tense'});
+      await say(H('夜、{強い雨}が降り出しました。{テントの中に水がしみ込み、寝袋がぬれてしまいました。}'), {img:'tent_rain', ic:'🌧️', lb:'雨', pal:'tent', mood:'tense'});
       chg({hp:-6, hyg:-6, mind:-6});
     },
     3: async function(){
-      if(S.season === 'winter'){ chg({hp:S.inv.climate ? -6 : -16}); await say(H('{夜は氷点下。テントの中まで凍える寒さ}です。' + (S.inv.climate ? '寝袋とカイロで、なんとかしのぎました。' : '低体温症になりかけ、震えが止まりません。')), {ic:'🥶', lb:'寒さ', pal:'winter'}); if(!S.inv.climate) trouble('冬のテントで低体温症になりかけた'); point('冬の屋外での避難は命に関わる。寝袋・毛布・カイロを。'); }
-      else if(S.season === 'summer'){ chg({hp:S.inv.climate ? -5 : -14}); await say(H('{日中のテントの中は40℃以上。}' + (S.inv.climate ? '冷却シートと扇風機でしのぎました。' : '頭がくらくらし、熱中症の症状が出ました。')), {ic:'🥵', lb:'暑さ', pal:'summer'}); if(!S.inv.climate) trouble('夏のテントで熱中症になった'); point('夏の屋外での避難は熱中症に注意。日陰・水分・塩分を。'); }
-      else { chg({hp:-4}); await say('昼と夜の寒暖差が大きく、体力が奪われます。', {ic:'🌡️', pal:'tent'}); }
+      if(S.season === 'winter'){ chg({hp:S.inv.climate ? -6 : -16}); await say(H('{夜は氷点下。テントの中まで凍える寒さ}です。' + (S.inv.climate ? '寝袋とカイロで、なんとかしのぎました。' : '低体温症になりかけ、震えが止まりません。')), {img:'tent_cold', ic:'🥶', lb:'寒さ', pal:'winter'}); if(!S.inv.climate) trouble('冬のテントで低体温症になりかけた'); point('冬の屋外での避難は命に関わる。寝袋・毛布・カイロを。'); }
+      else if(S.season === 'summer'){ chg({hp:S.inv.climate ? -5 : -14}); await say(H('{日中のテントの中は40℃以上。}' + (S.inv.climate ? '冷却シートと扇風機でしのぎました。' : '頭がくらくらし、熱中症の症状が出ました。')), {img:'tent_heat', ic:'🥵', lb:'暑さ', pal:'summer'}); if(!S.inv.climate) trouble('夏のテントで熱中症になった'); point('夏の屋外での避難は熱中症に注意。日陰・水分・塩分を。'); }
+      else { chg({hp:-4}); await say('昼と夜の寒暖差が大きく、体力が奪われます。', {img:'tent_mild', ic:'🌡️', pal:'tent'}); }
     },
     4: async function(){
-      await say(H('公園の仮設トイレは{長い行列}。夜は暗くて、行くのも怖い。'), {ic:'🚻', lb:'トイレ', pal:'tent'});
+      await say(H('公園の仮設トイレは{長い行列}。夜は暗くて、行くのも怖い。'), {img:'tent_toilet_line', ic:'🚻', lb:'トイレ', pal:'tent'});
       chg({hyg:-4, mind:-3});
       if(S.inv.light) await say('ライトを持っていたので、夜も足元を照らして行けました。');
     },
     5: async function(){
-      await say(H('テントには鍵がありません。{夜、外で人の気配がして、眠れませんでした。}'), {ic:'🔦', lb:'防犯', pal:'tent', mood:'tense'});
+      await say(H('テントには鍵がありません。{夜、外で人の気配がして、眠れませんでした。}'), {img:'tent_security', ic:'🔦', lb:'防犯', pal:'tent', mood:'tense'});
       chg({mind:-6}); point('テントで過ごすときは、貴重品を身につけ、まわりの人と声をかけ合う。');
     },
     6: async function(){
-      chg({hp:-5}); await say(H('{かたい地面での生活で、腰と背中が痛みます。}'), {ic:'😣', lb:'疲れ', pal:'tent'});
+      chg({hp:-5}); await say(H('{かたい地面での生活で、腰と背中が痛みます。}'), {img:'tent_tired', ic:'😣', lb:'疲れ', pal:'tent'});
     }
   },
   relative:{
     1: async function(){
-      await say(H('車で親戚の家へ向かいます。<br>{道路にはひび割れや段差があり、通行止めや大渋滞。}'), {ic:'🚗', lb:'移動', pal:'relative', mood:'tense'});
+      await say(H('車で親戚の家へ向かいます。<br>{道路にはひび割れや段差があり、通行止めや大渋滞。}'), {img:'rel_drive', ic:'🚗', lb:'移動', pal:'relative', mood:'tense'});
       chg({gas:-40, hp:-10, mind:-6, wait:7});
       if(S.inv.gas <= 0){ chg({hp:-8, mind:-10}); await say(H('{途中でガソリンが切れかけ、長い時間スタンドに並びました。}')); trouble('移動中にガソリンが足りなくなった'); point('車のガソリンは、ふだんから半分以下にしない。'); }
-      await say(H('7時間かかって、ようやく到着しました。<br>被災地の外は、<<電気も水道も使えます。>>'), {ic:'🏡', lb:'到着', pal:'relative', mood:'calm'});
+      await say(H('7時間かかって、ようやく到着しました。<br>被災地の外は、<<電気も水道も使えます。>>'), {img:'rel_arrive', ic:'🏡', lb:'到着', pal:'relative', mood:'calm'});
       S.supplied = true; chg({mind:+10, hyg:+15});
       point('被災地の外に頼れる親戚・知人がいるなら、そこへ移る(縁故避難)のも有力な選択肢。');
     },
-    2: async function(){ chg({mind:-3}); await say(H('親戚は温かく迎えてくれましたが、{何日も世話になることに気をつかいます。}'), {ic:'🙇', lb:'気づかい', pal:'relative'}); },
+    2: async function(){ chg({mind:-3}); await say(H('親戚は温かく迎えてくれましたが、{何日も世話になることに気をつかいます。}'), {img:'rel_polite', ic:'🙇', lb:'気づかい', pal:'relative'}); },
     3: async function(){
       var g = await ask('自宅の様子が気になります。', [
         {t:'一度戻って片付けと、罹災証明書の申請をする', sub:'往復で一日がかり', v:'go'},
         {t:'今は戻らず、落ち着いてから戻る', v:'stay'}
-      ], {ic:'🏠', lb:'自宅が心配', pal:'relative'});
+      ], {img:'rel_home_check', ic:'🏠', lb:'自宅が心配', pal:'relative'});
       if(g === 'go'){ chg({hp:-8, gas:-30, wait:6}); await say(H('家を片付け、市役所で[罹災証明書]を申請しました。支援金や税の減免を受けるのに必要な書類です。<br>' + (S.stash.water + S.stash.food > 0 ? '家に残していた備蓄も持ってきました。' : ''))); takeStash(false); point('家が被害を受けたら、片付ける前に写真を撮り、罹災証明書を申請する。'); }
     },
-    4: async function(){ await say('テレビでは、被災地の様子が伝えられています。', {ic:'📺', pal:'relative'}); },
-    5: async function(){ if(S.kids){ chg({mind:-4}); await say(H('子どもの学校の再開が決まらず、{勉強や友だちのことが心配}です。'), {ic:'🎒', pal:'relative'}); } },
-    6: async function(){ await say(H('長く世話になるわけにはいきません。[仮設住宅]や、民間の賃貸住宅を借り上げる[みなし仮設]の情報を調べ始めました。'), {ic:'📄', lb:'これからの住まい', pal:'relative'}); }
+    4: async function(){ await say('テレビでは、被災地の様子が伝えられています。', {img:'rel_tv', ic:'📺', pal:'relative'}); },
+    5: async function(){ if(S.kids){ chg({mind:-4}); await say(H('子どもの学校の再開が決まらず、{勉強や友だちのことが心配}です。'), {img:'rel_kids_school', ic:'🎒', pal:'relative'}); } },
+    6: async function(){ await say(H('長く世話になるわけにはいきません。[仮設住宅]や、民間の賃貸住宅を借り上げる[みなし仮設]の情報を調べ始めました。'), {img:'rel_housing', ic:'📄', lb:'これからの住まい', pal:'relative'}); }
   }
 };
 
 /* ===================== 家族ごとの出来事 ===================== */
 async function familyEvent(d){
   if(S.elder && d === 2 && S.inv.meds <= 1){
-    await say(H('{親の薬が、あと少しでなくなります。}持病の薬が切れると、命に関わることもあります。'), {ic:'💊', lb:'薬が切れる', pal:'bad', mood:'tense'});
+    await say(H('{親の薬が、あと少しでなくなります。}持病の薬が切れると、命に関わることもあります。'), {img:'elder_meds', ic:'💊', lb:'薬が切れる', pal:'bad', mood:'tense'});
     trouble('親の薬が足りなくなった');
     point('毎日飲む薬は、1週間分の予備とお薬手帳(またはそのコピー・写真)を用意しておく。');
   }
   if(S.baby && d === 2 && S.inv.baby <= 1){
-    await say(H('{ミルクとおむつが、もうすぐなくなります。}乳幼児用品は、支援物資の中でも届くのが遅れがちです。'), {ic:'🍼', lb:'ミルク・おむつ', pal:'bad'});
+    await say(H('{ミルクとおむつが、もうすぐなくなります。}乳幼児用品は、支援物資の中でも届くのが遅れがちです。'), {img:'baby_supplies_low', ic:'🍼', lb:'ミルク・おむつ', pal:'bad'});
     trouble('ミルク・おむつが足りなくなった');
     point('乳幼児用品(液体ミルク・おむつ・おしりふき)は、少なくとも1週間分を。');
   }
   if(S.kids && d === 3){
     chg({mind:-4});
-    await say(H('子どもが「また地震がくる?」と、{夜になると不安がって泣くように}なりました。<br>そばにいて、話を聞いてあげます。'), {ic:'🧒', lb:'子どもの不安', pal:'day'});
+    await say(H('子どもが「また地震がくる?」と、{夜になると不安がって泣くように}なりました。<br>そばにいて、話を聞いてあげます。'), {img:'kids_anxious', ic:'🧒', lb:'子どもの不安', pal:'day'});
     point('子どもは災害後に不安が強くなる。そばにいて話を聞き、いつもの遊びや日課を少しずつ取り戻す。');
   }
   if(S.pet && d === 4 && S.inv.pet <= 1){
-    await say(H('{ペットフードがなくなりそうです。}'), {ic:'🐕', lb:'ペットフード', pal:'bad'});
+    await say(H('{ペットフードがなくなりそうです。}'), {img:'pet_food_low', ic:'🐕', lb:'ペットフード', pal:'bad'});
     trouble('ペットフードが足りなくなった');
   }
 }
@@ -1482,62 +1656,62 @@ async function procure(d, part){
     {t:'🤝 近所の人と、余った物を分け合う', v:'share'},
     {t:part === 2 ? '😴 今日はもう休む' : '😴 動かずに体を休める', v:'rest'}
   ];
-  var a = await ask(H(lead) + (part === 2 ? 'もう1つ何かしますか?' : '何をしますか?'), opts, {ic:'🧺', lb:part === 2 ? '午後の行動' : '午前の行動', pal:'day'});
+  var a = await ask(H(lead) + (part === 2 ? 'もう1つ何かしますか?' : '何をしますか?'), opts, {img:'procure_board', ic:'🧺', lb:part === 2 ? '午後の行動' : '午前の行動', pal:'day'});
   var info = hasInfo();
   if(a === 'water'){
     scene({se:'steps'});
-    if(!info && rnd() < 0.5){ chg({hp:-5, wait:2}); await say(H('{給水の時間がわからず、行ってみると終わっていました。}<br>電池が切れて、情報が手に入りません。'), {ic:'⌛', pal:'bad'}); trouble('情報がなく、給水を受けられなかった'); return; }
+    if(!info && rnd() < 0.5){ chg({hp:-5, wait:2}); await say(H('{給水の時間がわからず、行ってみると終わっていました。}<br>電池が切れて、情報が手に入りません。'), {img:'water_missed', ic:'⌛', pal:'bad'}); trouble('情報がなく、給水を受けられなかった'); return; }
     var w = I.tank ? Math.min(20, 6 * S.n + 4) : 4 + S.n;
     var cost = S.home === 'high' && S.mode === 'home' ? -12 : -6;
     chg({water:w, hp:cost + (S.season === 'summer' ? -3 : 0), wait:3});
-    await say(H('2時間半並んで、[' + w + 'リットル]の水を受け取りました。' + (I.tank ? '' : '<br>{容器が少なく、たくさんは運べません。}')), {ic:'🚰', lb:'給水', pal:'day', se:'water'});
+    await say(H('2時間半並んで、[' + w + 'リットル]の水を受け取りました。' + (I.tank ? '' : '<br>{容器が少なく、たくさんは運べません。}')), {img:'water_truck', ic:'🚰', lb:'給水', pal:'day', se:'water'});
     if(!I.tank) point('給水を受けるには容器が必要。ポリタンクや給水袋を備える。');
   } else if(a === 'ration'){
     scene({se:'steps'});
-    if(!S.registered){ S.registered = true; await say(H('避難所の受付で[「自宅(車・テント)で過ごしています」と登録]しました。<<これで物資や情報を受け取れます。>>'), {ic:'📝', pal:'day'}); }
+    if(!S.registered){ S.registered = true; await say(H('避難所の受付で[「自宅(車・テント)で過ごしています」と登録]しました。<<これで物資や情報を受け取れます。>>'), {img:'register_desk', ic:'📝', pal:'day'}); }
     var fq = d < 2 ? S.n : d < 3 ? 2 * S.n : 3 * S.n, wq = d < 3 ? S.n : 2 * S.n, tq = d >= 3 ? 5 * S.n : 0;
     chg({food:fq, water:wq, toilet:tq, hp:-4, wait:2});
-    await say(H('2時間並んで、[食料' + fq + '食・水' + wq + 'L' + (tq ? '・携帯トイレ' + tq + '回分' : '') + ']を受け取りました。'), {ic:'📦', lb:'配給', pal:'day'});
+    await say(H('2時間並んで、[食料' + fq + '食・水' + wq + 'L' + (tq ? '・携帯トイレ' + tq + '回分' : '') + ']を受け取りました。'), {img:'ration_line', ic:'📦', lb:'配給', pal:'day'});
   } else if(a === 'shop'){
     scene({se:'steps'});
-    if(d <= 1){ chg({hp:-5, mind:-4}); await say(H('{どの店も閉まっているか、棚が空っぽです。}'), {ic:'🏪', lb:'店', pal:'bad'}); trouble('店を探し回ったが、何も買えなかった'); point('地震の直後は店が開かず、開いてもすぐ品切れになる。だから「家の備え」が必要。'); return; }
-    if(!S.power && !I.cash){ chg({hp:-4, mind:-6, wait:2}); await say(H('ようやく開いている店を見つけましたが、{停電でカードも電子マネーも使えません。}現金を持っていませんでした。'), {ic:'💳', pal:'bad'}); trouble('停電でキャッシュレス決済が使えず、買えなかった'); point('停電中はカード・電子マネーが使えないことがある。小銭を含む現金を用意する。'); return; }
+    if(d <= 1){ chg({hp:-5, mind:-4}); await say(H('{どの店も閉まっているか、棚が空っぽです。}'), {img:'shop_closed', ic:'🏪', lb:'店', pal:'bad'}); trouble('店を探し回ったが、何も買えなかった'); point('地震の直後は店が開かず、開いてもすぐ品切れになる。だから「家の備え」が必要。'); return; }
+    if(!S.power && !I.cash){ chg({hp:-4, mind:-6, wait:2}); await say(H('ようやく開いている店を見つけましたが、{停電でカードも電子マネーも使えません。}現金を持っていませんでした。'), {img:'shop_cashless', ic:'💳', pal:'bad'}); trouble('停電でキャッシュレス決済が使えず、買えなかった'); point('停電中はカード・電子マネーが使えないことがある。小銭を含む現金を用意する。'); return; }
     var ok = d < 4 ? 0.55 : 0.85;
-    if(rnd() < ok){ var gf = d < 4 ? 2 * S.n : 3 * S.n, gw = d < 4 ? 2 * S.n : 4 * S.n; chg({food:gf, water:gw, toilet:d >= 4 ? 5 * S.n : 0, hp:-4, wait:3, yen:3000 * S.n}); await say(H('3時間並んで、[食料' + gf + '食・水' + gw + 'L]を買えました。<br>' + (d < 4 ? '{1人あたりの数が制限されていました。}' : '')), {ic:'🛒', lb:'買い物', pal:'day'}); }
-    else { chg({hp:-5, mind:-5, wait:3}); await say(H('{並んでいる間に品切れになりました。}'), {ic:'🏪', pal:'bad'}); }
+    if(rnd() < ok){ var gf = d < 4 ? 2 * S.n : 3 * S.n, gw = d < 4 ? 2 * S.n : 4 * S.n; chg({food:gf, water:gw, toilet:d >= 4 ? 5 * S.n : 0, hp:-4, wait:3, yen:3000 * S.n}); await say(H('3時間並んで、[食料' + gf + '食・水' + gw + 'L]を買えました。<br>' + (d < 4 ? '{1人あたりの数が制限されていました。}' : '')), {img:'shop_buy', ic:'🛒', lb:'買い物', pal:'day'}); }
+    else { chg({hp:-5, mind:-5, wait:3}); await say(H('{並んでいる間に品切れになりました。}'), {img:'shop_soldout', ic:'🏪', pal:'bad'}); }
   } else if(a === 'drive'){
     chg({gas:-30, hp:-6, wait:6, yen:9000 * S.n});
     if(rnd() < 0.8){ chg({food:6 * S.n, water:8 * S.n, toilet:10 * S.n}); if(S.elder) chg({meds:3}); if(S.baby) chg({baby:3}); if(S.pet) chg({pet:4});
-      await say(H('道路の渋滞で往復6時間。被災地の外のスーパーで、<<まとめて買い物ができました。>>'), {ic:'🚗', lb:'買い出し', pal:'day'}); }
-    else { chg({mind:-8}); await say(H('{通行止めで引き返すことになり、ガソリンだけを使ってしまいました。}'), {ic:'🚧', pal:'bad'}); trouble('買い出しに出たが、通行止めで引き返した'); }
+      await say(H('道路の渋滞で往復6時間。被災地の外のスーパーで、<<まとめて買い物ができました。>>'), {img:'drive_supermarket', ic:'🚗', lb:'買い出し', pal:'day'}); }
+    else { chg({mind:-8}); await say(H('{通行止めで引き返すことになり、ガソリンだけを使ってしまいました。}'), {img:'road_closed', ic:'🚧', pal:'bad'}); trouble('買い出しに出たが、通行止めで引き返した'); }
   } else if(a === 'fetch'){
-    if(S.house === 'danger' && rnd() < 0.45){ scene({se:'quake', shake:2}); chg({hp:-14, mind:-6}); await say(H('家の中で{余震!}　落ちてきた物で{けがをしてしまいました。}'), {ic:'🏚️', pal:'bad'}); trouble('傾いた家に入り、余震でけがをした'); point('壊れた家に入るときは、余震に注意し、一人で入らない。'); }
+    if(S.house === 'danger' && rnd() < 0.45){ scene({se:'quake', shake:2}); chg({hp:-14, mind:-6}); await say(H('家の中で{余震!}　落ちてきた物で{けがをしてしまいました。}'), {img:'fetch_aftershock', ic:'🏚️', pal:'bad'}); trouble('傾いた家に入り、余震でけがをした'); point('壊れた家に入るときは、余震に注意し、一人で入らない。'); }
     var got = takeStash(true); chg(Object.assign({hp:-4}, got));
-    await say(H('家に戻り、置いてきた備蓄を持ってきました。<br>' + (S.stashTotal() > 0 ? 'まだ家に残っています。' : '<<家の備蓄はすべて持ち出しました。>>')), {ic:'🎒', lb:'自宅の備蓄', pal:'home'});
+    await say(H('家に戻り、置いてきた備蓄を持ってきました。<br>' + (S.stashTotal() > 0 ? 'まだ家に残っています。' : '<<家の備蓄はすべて持ち出しました。>>')), {img:'fetch_home', ic:'🎒', lb:'自宅の備蓄', pal:'home'});
   } else if(a === 'meds'){
     chg({hp:-4, wait:4});
-    if(I.notebook || rnd() < 0.4){ chg({meds:5}); await say(H('救護所の医師に診てもらい、<<薬を5日分出してもらえました。>>' + (I.notebook ? 'お薬手帳のコピーがあったので、すぐに同じ薬がわかりました。' : '')), {ic:'🏥', lb:'救護所', pal:'day'}); }
-    else { chg({meds:2, mind:-5}); await say(H('{飲んでいる薬の名前がわからず、同じ薬を特定するのに時間がかかりました。}とりあえず2日分だけもらえました。'), {ic:'🏥', pal:'bad'}); point('お薬手帳は、スマホで写真を撮っておくか、コピーを持ち出し袋へ。'); }
+    if(I.notebook || rnd() < 0.4){ chg({meds:5}); await say(H('救護所の医師に診てもらい、<<薬を5日分出してもらえました。>>' + (I.notebook ? 'お薬手帳のコピーがあったので、すぐに同じ薬がわかりました。' : '')), {img:'medical_post', ic:'🏥', lb:'救護所', pal:'day'}); }
+    else { chg({meds:2, mind:-5}); await say(H('{飲んでいる薬の名前がわからず、同じ薬を特定するのに時間がかかりました。}とりあえず2日分だけもらえました。'), {img:'medical_post', ic:'🏥', pal:'bad'}); point('お薬手帳は、スマホで写真を撮っておくか、コピーを持ち出し袋へ。'); }
   } else if(a === 'baby'){
-    chg({baby:3, hp:-3, wait:2}); await say(H('避難所で、<<液体ミルクとおむつを3日分>>受け取りました。'), {ic:'🍼', pal:'day'});
+    chg({baby:3, hp:-3, wait:2}); await say(H('避難所で、<<液体ミルクとおむつを3日分>>受け取りました。'), {img:'baby_supply_get', ic:'🍼', pal:'day'});
   } else if(a === 'pet'){
-    chg({pet:3, hp:-3, wait:2}); await say(H('動物愛護団体の支援で、<<ペットフードを3日分>>もらえました。'), {ic:'🐕', pal:'day'});
+    chg({pet:3, hp:-3, wait:2}); await say(H('動物愛護団体の支援で、<<ペットフードを3日分>>もらえました。'), {img:'pet_supply_get', ic:'🐕', pal:'day'});
   } else if(a === 'charge'){
-    chg({batt:+60, wait:2}); await say('避難所の発電機につないだ充電コーナーで、スマホを充電しました。', {ic:'🔋', pal:'day'});
+    chg({batt:+60, wait:2}); await say('避難所の発電機につないだ充電コーナーで、スマホを充電しました。', {img:'charging_corner', ic:'🔋', pal:'day'});
   } else if(a === 'share'){
     var surplus = I.water > need.water * 3 || I.food > need.food * 3;
-    if(surplus){ chg({mind:+10, water:-2, food:-2}); await say(H('多めに備えていた水と食料を、困っている近所の家族に分けました。<<「本当に助かった」と、何度もお礼を言われました。>>'), {ic:'🤝', lb:'助け合い', pal:'good'}); point('多めに備えておくと、近所の人も助けられる。'); }
-    else if(rnd() < 0.6){ chg({mind:+5, water:2, food:2}); await say(H('近所の人が、余った水と食料を分けてくれました。<<助け合いが身にしみます。>>'), {ic:'🤝', pal:'good'}); }
+    if(surplus){ chg({mind:+10, water:-2, food:-2}); await say(H('多めに備えていた水と食料を、困っている近所の家族に分けました。<<「本当に助かった」と、何度もお礼を言われました。>>'), {img:'share_give', ic:'🤝', lb:'助け合い', pal:'good'}); point('多めに備えておくと、近所の人も助けられる。'); }
+    else if(rnd() < 0.6){ chg({mind:+5, water:2, food:2}); await say(H('近所の人が、余った水と食料を分けてくれました。<<助け合いが身にしみます。>>'), {img:'share_receive', ic:'🤝', pal:'good'}); }
     else { chg({mind:-2}); await say('みんな自分のことで精いっぱいで、分けてもらえる物はありませんでした。'); }
   } else {
-    chg({hp:part === 2 ? +4 : +6, mind:+3}); await say(part === 2 ? '今日はもう休むことにしました。' : '体を休めることにしました。', {ic:'😴', pal:'day'});
+    chg({hp:part === 2 ? +4 : +6, mind:+3}); await say(part === 2 ? '今日はもう休むことにしました。' : '体を休めることにしました。', {img:'rest', ic:'😴', pal:'day'});
   }
 }
 
 /* ===================== 1日の終わり ===================== */
 async function dayEnd(d){
   var need = dailyNeed(), I = S.inv, rows = [], msgs = [];
-  scene({ic:'🌙', lb:d + '日目の夜', pal:'night', mood:'night'});
+  scene({img:'night_end', ic:'🌙', lb:d + '日目の夜', pal:'night', mood:'night'});
   /* 避難所の配給・設備 */
   var toiletFree = false;
   if(S.mode === 'shelter'){
@@ -1592,7 +1766,7 @@ async function dayEnd(d){
   if(I.batt <= 0 && !S.inv.radio && S.mode !== 'shelter' && !S.supplied){ dm -= 5; rows.push(['📵 情報', '<span class="bad">電池切れで情報が入らない</span>']); trouble('スマホの電池が切れ、情報が入らなくなった'); }
   I.water = Math.round(I.water * 10) / 10;
   var html = '<b>' + d + '日目の夜</b><table class="sumt">' + rows.map(function(r){ return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; }).join('') + '</table>';
-  await say(html, {ic:'🌙', lb:d + '日目の終わり', pal:'night'});
+  await say(html, {img:'night_end', ic:'🌙', lb:d + '日目の終わり', pal:'night'});
   var ch = {}; if(dh) ch.hp = Math.round(dh); if(dm) ch.mind = Math.round(dm); if(dy) ch.hyg = Math.round(dy);
   chg(ch);
   var warn = [];
@@ -1603,8 +1777,8 @@ async function dayEnd(d){
   var lackT = [];
   if(I.water < tomorrow.water && !S.supplied) lackT.push('水'); if(I.food < tomorrow.food && !S.supplied) lackT.push('食料'); if(I.toilet < tomorrow.toilet && !toiletFree && d < 2) lackT.push('トイレ');
   if(lackT.length) warn.push('明日の分の[' + lackT.join('・') + ']が足りません。');
-  if(warn.length) await say(H(warn.join('<br>')), {ic:S.hp < 35 ? '🥀' : '🌙', pal:S.hp < 35 ? 'bad' : 'night', mood:S.hp < 35 ? 'tense' : 'night'});
-  if(S.hyg < 25 && !S.infected && rnd() < 0.5){ S.infected = true; chg({hp:-10}); await say(H('{不衛生な環境で、おなかをこわしてしまいました。}'), {ic:'🤒', pal:'bad'}); trouble('不衛生な環境で体調を崩した'); }
+  if(warn.length) await say(H(warn.join('<br>')), {img:S.hp < 35 ? 'warn_exhausted' : 'night_end', ic:S.hp < 35 ? '🥀' : '🌙', pal:S.hp < 35 ? 'bad' : 'night', mood:S.hp < 35 ? 'tense' : 'night'});
+  if(S.hyg < 25 && !S.infected && rnd() < 0.5){ S.infected = true; chg({hp:-10}); await say(H('{不衛生な環境で、おなかをこわしてしまいました。}'), {img:'sick_fever', ic:'🤒', pal:'bad'}); trouble('不衛生な環境で体調を崩した'); }
   tl(MODE[S.mode].t + 'で過ごす。' + (sw || sf || st ? (sw ? '水' : '') + (sf ? '食料' : '') + (st ? 'トイレ' : '') + 'が不足。' : '必要な物は足りた。'));
 }
 function use(k, need){
@@ -1618,10 +1792,10 @@ function use(k, need){
 async function ending(){
   var collapsed = S.hp <= 0;
   if(collapsed){
-    await say(H('{体が動かなくなり、その場に倒れてしまいました。}<br>救急車で運ばれ、病院で手当てを受けることになりました。'), {ic:'🚑', lb:'力尽きた', pal:'bad', mood:'danger', flash:true});
+    await say(H('{体が動かなくなり、その場に倒れてしまいました。}<br>救急車で運ばれ、病院で手当てを受けることになりました。'), {img:'ending_collapse', ic:'🚑', lb:'力尽きた', pal:'bad', mood:'danger', flash:true});
     trouble('体力が尽き、病院へ運ばれた');
   } else {
-    await say(H('あなたと家族は、[地震からの1週間]を乗り切りました。<br>断水は、まだ続いています。<br>でも、少しずつ、街に日常が戻り始めています。'), {ic:'🌄', lb:'1週間後', pal:'good', mood:'hope'});
+    await say(H('あなたと家族は、[地震からの1週間]を乗り切りました。<br>断水は、まだ続いています。<br>でも、少しずつ、街に日常が戻り始めています。'), {img:'ending_week', ic:'🌄', lb:'1週間後', pal:'good', mood:'hope'});
   }
   var score = Math.round((S.hp + S.mind + S.hyg) / 3 - S.shortAny * 3 - S.troubles.length);
   if(collapsed) score = Math.min(score, 20);
