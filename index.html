@@ -241,6 +241,18 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
 .eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.45s}
 @keyframes eqb{0%,100%{height:4px}50%{height:14px}}
 
+/* 再生のしかた(1曲リピート/全曲を順番に) */
+.rep{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 10px}
+.rep[hidden]{display:none}
+.rep .rl{font-size:calc((13px) * var(--k));color:var(--tx2);font-weight:700;margin-right:4px}
+.rep button{flex:1 1 0;min-width:9em;border:1px solid var(--line);background:var(--bg);color:var(--tx);border-radius:99px;padding:7px 12px;font:inherit;font-weight:800;font-size:calc((14px) * var(--k));cursor:pointer}
+.rep button.on{background:#ffcf4a;border-color:#ffcf4a;color:#1a1a1a}
+@media (max-width:520px){
+  .gtabs button{flex:1 1 calc(50% - 4px);min-width:0;padding:8px 4px;white-space:nowrap}
+  .rep .rl{flex-basis:100%}
+  .rep button{min-width:0;padding:7px 6px;font-size:calc((13px) * var(--k))}
+}
+
 /* ===== 備蓄シミュレーター追加分 ===== */
 .hero{background:radial-gradient(120% 90% at 20% 0%,#163a2c 0%,#141b2b 55%,#0b1019 100%)}
 .hero .kick{background:#3ddc97;color:#062a1a}
@@ -430,7 +442,8 @@ footer{text-align:center;font-size:calc((12px) * var(--k));color:var(--tx2);padd
   <p class="now" id="sndNow"></p>
   <div class="gtabs" id="genreTabs" role="tablist" aria-label="BGMのジャンル"></div>
   <div class="trks" id="trkList"></div>
-  <p class="now sm">結果発表では、ランクに合わせて拍手や声が流れます。</p>
+  <div class="rep" id="repSeg" role="group" aria-label="再生のしかた"></div>
+  <p class="now sm">ロックBGM:BGMer(フリーBGM)。結果発表では、ランクに合わせて拍手や声が流れます。</p>
   <label class="chk"><input type="checkbox" id="sndC" onchange="setSound(this.checked)"> サウンドを鳴らす</label>
   <div class="vol"><label for="bvR">BGMの音量</label><input type="range" id="bvR" min="0" max="100" step="5" oninput="setBgmVol(+this.value)"><span id="bvLb"></span></div>
   <div class="vol"><label for="svR">効果音の音量</label><input type="range" id="svR" min="0" max="100" step="5" oninput="setSeVol(+this.value)" onchange="setSeVol(+this.value,true)"><span id="svLb"></span></div>
@@ -478,33 +491,44 @@ document.addEventListener('click', function(e){ var p = document.getElementById(
 function numLs(k, d){ var v = parseFloat(ls(k)); return isNaN(v) ? d : Math.min(1, Math.max(0, v)); }
 /* BGM:bgm/ フォルダの曲(ロック・クラシック)か、ブラウザ内の合成音から選べます */
 var BGM_DIR = 'bgm/';
-/* ロックの曲ファイルが届くまで、ロックは非表示(届いたら ROCK_READY を true にする) */
-var ROCK_READY = false;
+var ROCK_READY = true;   // false にするとロックのタブを隠せます
 var GENRES = [
   {id:'rock',    t:'ロック',     ic:'🎸'},
   {id:'classic', t:'クラシック', ic:'🎻'},
   {id:'synth',   t:'シンセ',     ic:'🎛'},
   {id:'none',    t:'BGMなし',    ic:'🔇'}
 ].filter(function(g){ return ROCK_READY || g.id !== 'rock'; });
-var SONGS = [
-  {k:'kaiki',    t:'世にも奇怪な物語', rock:{bpm:124, len:'4分30秒'},  classic:{len:'4分34秒'}},
-  {k:'nazotoki', t:'謎解きをしよう',   rock:{bpm:100, len:'10分08秒'}, classic:{len:'10分11秒'}},
-  {k:'shinso',   t:'真相はここに',     rock:{bpm:80,  len:'10分36秒'}, classic:{len:'10分40秒'}},
-  {k:'kaisen',   t:'荒波の海戦',       rock:{bpm:190, len:'10分35秒'}, classic:{len:'10分37秒'}},
-  {k:'tegami',   t:'手紙を出すよ',     rock:{bpm:105, len:'9分59秒'},  classic:{len:'10分03秒'}},
-  {k:'namida',   t:'涙の結晶',         rock:{bpm:81,  len:'10分26秒'}, classic:{len:'10分28秒'}}
+/* クラシック(6曲) */
+var CLASSIC = [
+  {id:'classic1-kaiki',    t:'世にも奇怪な物語', len:'4分34秒'},
+  {id:'classic2-nazotoki', t:'謎解きをしよう',   len:'10分11秒'},
+  {id:'classic3-shinso',   t:'真相はここに',     len:'10分40秒'},
+  {id:'classic4-kaisen',   t:'荒波の海戦',       len:'10分37秒'},
+  {id:'classic5-tegami',   t:'手紙を出すよ',     len:'10分03秒'},
+  {id:'classic6-namida',   t:'涙の結晶',         len:'10分28秒'}
+];
+/* ロック(7曲・BGMer フリーBGM) */
+var ROCK = [
+  {id:'rock1-hooligans',    t:'フーリガンズ',       len:'1分16秒'},
+  {id:'rock2-saibou',       t:'細胞の復讐',         len:'1分36秒'},
+  {id:'rock3-hardpuncher',  t:'ハードパンチャー',   len:'1分30秒'},
+  {id:'rock4-kurotights',   t:'スリルな黒タイツ',   len:'1分32秒'},
+  {id:'rock5-coralreef',    t:'コーラルリーフ',     len:'1分38秒'},
+  {id:'rock6-bakuhatsu',    t:'爆発寸前!',         len:'1分30秒'},
+  {id:'rock7-dragonslayer', t:'ドラゴンスレイヤー', len:'2分01秒'}
 ];
 function trackList(g){
-  if(g === 'rock' || g === 'classic') return SONGS.map(function(s, i){ var m = s[g]; return {id:g + (i + 1) + '-' + s.k, t:s.t, sub:(m.bpm ? 'BPM' + m.bpm + '・' : '') + m.len + '・リピート'}; });
+  if(g === 'rock' || g === 'classic') return (g === 'rock' ? ROCK : CLASSIC).map(function(s){ return {id:s.id, t:s.t, sub:s.len}; });
   if(g === 'synth') return [{id:'synth', t:'場面に合わせて変化', sub:'地震・夜・朝などで曲調が変わる合成音'}];
   return [{id:'none', t:'BGMなし', sub:'効果音だけ鳴らします'}];
 }
 function genreOf(id){ return /^rock/.test(id) ? 'rock' : /^classic/.test(id) ? 'classic' : id === 'synth' ? 'synth' : 'none'; }
 function findTrack(id){ if(!ROCK_READY && genreOf(id) === 'rock') return null; return trackList(genreOf(id)).filter(function(t){ return t.id === id; })[0]; }
 var SND = { on:false, ac:null, master:null, bgmG:null, seG:null, trackG:null, mood:'off', timer:null, step:0, drone:null,
-  audio:null, srcNode:null, missing:false, track:ls(PFX + 'bgm') || (ROCK_READY ? 'rock1-kaiki' : 'classic1-kaiki'), view:null,
+  audio:null, srcNode:null, missing:false, rep:ls(PFX + 'rep') === 'all' ? 'all' : 'one', track:ls(PFX + 'bgm') || 'classic1-kaiki', view:null,
   bgmVol:numLs(PFX + 'bv', 0.6), seVol:numLs(PFX + 'sv', 0.8), typeSnd:ls(PFX + 'ts') !== '0' };
-if(!findTrack(SND.track)) SND.track = /^rock\d/.test(SND.track) ? SND.track.replace(/^rock/, 'classic') : 'classic1-kaiki';
+if(SND.track === 'rock-all'){ SND.track = 'rock1-hooligans'; SND.rep = 'all'; }
+if(!findTrack(SND.track)) SND.track = /^rock\d-(kaiki|nazotoki|shinso|kaisen|tegami|namida)$/.test(SND.track) ? SND.track.replace(/^rock/, 'classic') : 'classic1-kaiki';
 SND.view = genreOf(SND.track);
 function ac(){
   if(!SND.ac){
@@ -583,14 +607,28 @@ function playTrack(){
       renderSnd();
     });
     SND.audio.addEventListener('playing', function(){ SND.missing = false; });
+    SND.audio.addEventListener('ended', function(){   // メドレー:次の曲へ
+      if(SND.rep !== 'all' || !SND.on) return;
+      var list = trackList(genreOf(SND.track)), i = list.map(function(t){ return t.id; }).indexOf(SND.track);
+      if(i < 0) return;
+      SND.track = list[(i + 1) % list.length].id; ls(PFX + 'bgm', SND.track); playTrack(); renderSnd();
+    });
   }
-  if(SND.audio.getAttribute('data-id') !== tr){
-    SND.audio.setAttribute('data-id', tr); SND.audio.src = BGM_DIR + tr + '.mp3';
+  var file = tr;
+  SND.audio.loop = SND.rep !== 'all';
+  if(SND.audio.getAttribute('data-id') !== file){
+    SND.audio.setAttribute('data-id', file); SND.audio.src = BGM_DIR + file + '.mp3';
     var r = SND.resumeAt; SND.resumeAt = null;
     if(r) SND.audio.addEventListener('loadedmetadata', function f(){ SND.audio.removeEventListener('loadedmetadata', f); try{ SND.audio.currentTime = r * SND.audio.duration; }catch(e){} });
   } else SND.resumeAt = null;
   applyVol();
   if(SND.audio.paused){ var pr = SND.audio.play(); if(pr && pr.catch) pr.catch(function(){}); }
+}
+/* 再生のしかた:one=1曲リピート / all=ジャンル内の全曲を順番に */
+function setRepeat(m){
+  SND.rep = m === 'all' ? 'all' : 'one'; ls(PFX + 'rep', SND.rep);
+  if(SND.audio) SND.audio.loop = SND.rep === 'one';
+  se('click'); renderSnd();
 }
 function stopTrack(){ if(SND.audio && !SND.audio.paused) SND.audio.pause(); }
 /* 結果の声が聞こえるよう、BGMを一時的に小さくする */
@@ -668,16 +706,10 @@ function applyVol(){
 function setBgmVol(v){ SND.bgmVol = v / 100; ls(PFX + 'bv', SND.bgmVol); applyVol(); renderSnd(true); }
 function setSeVol(v, test){ SND.seVol = v / 100; ls(PFX + 'sv', SND.seVol); applyVol(); renderSnd(true); if(test){ var w = SND.on; SND.on = true; se('get'); SND.on = w; } }
 function setTypeSnd(on){ SND.typeSnd = on; ls(PFX + 'ts', on ? '1' : '0'); }
-/* ジャンルのタブ(ロック⇔クラシックは同じ曲のまま切り替え) */
+/* ジャンルのタブ(ロック・クラシックは一覧を表示して曲を選ぶ) */
 function selectGenre(g){
   SND.view = g;
-  var cur = genreOf(SND.track);
-  if(g === cur){ renderSnd(); return; }
-  if((g === 'rock' || g === 'classic') && (cur === 'rock' || cur === 'classic')){
-    var n = +SND.track.match(/^\D+(\d+)/)[1];
-    if(SND.audio && SND.audio.duration && !SND.audio.paused) SND.resumeAt = SND.audio.currentTime / SND.audio.duration;   // 同じ曲の同じ場所から続ける
-    selectTrack(trackList(g)[n - 1].id); return;
-  }
+  if(g === genreOf(SND.track)){ renderSnd(); return; }
   if(g === 'synth' || g === 'none'){ selectTrack(g); return; }
   renderSnd();
 }
@@ -709,7 +741,17 @@ function renderSnd(volOnly){
   }).join('');
   var now = findTrack(SND.track), gn = GENRES.filter(function(g){ return g.id === cur; })[0];
   var msg = !SND.on ? 'サウンドはオフです(曲を選ぶとオンになります)' :
-    SND.track === 'none' ? 'BGMなし(効果音だけ鳴ります)' : '♪ ' + gn.t + ':' + now.t;
+    SND.track === 'none' ? 'BGMなし(効果音だけ鳴ります)' : '♪ ' + gn.t + ':' + now.t +
+    (cur === 'rock' || cur === 'classic' ? (SND.rep === 'one' ? '(🔂 1曲リピート)' : '(🔁 ' + gn.t + 'を順番に再生)') : '');
+  var rEl = document.getElementById('repSeg');
+  if(rEl){
+    var music = view === 'rock' || view === 'classic';
+    rEl.hidden = !music;
+    rEl.innerHTML = '<span class="rl">再生のしかた</span>' +
+      [['one', '🔂 1曲リピート'], ['all', '🔁 全曲を順番に']].map(function(o){
+        return '<button type="button" data-rep="' + o[0] + '" class="' + (SND.rep === o[0] ? 'on' : '') + '" aria-pressed="' + (SND.rep === o[0]) + '" onclick="setRepeat(\'' + o[0] + '\')">' + o[1] + '</button>';
+      }).join('');
+  }
   if(SND.on && SND.missing && (cur === 'rock' || cur === 'classic')) msg += '  ※曲ファイル(bgm フォルダ)が見つからないため、合成音で再生中です';
   document.getElementById('sndNow').textContent = msg;
 }
