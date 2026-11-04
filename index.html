@@ -1262,7 +1262,13 @@ function opPlayNow(sound){
     if(!v.muted){ v.muted = true; opRender(); var q = v.play(); if(q && q.catch) q.catch(function(e2){ if(isBlock(e2)) opBlocked(); }); }
     else opBlocked();
   });
-  setTimeout(function(){ if(!opMoving() && $('op').classList.contains('on') && OP.ready && !v.seeking && !v.error) opBlocked(); }, 2500);
+  /* 3秒たっても映像が進まない(固まっている)とき:まだなら動画ファイルを直接読む方法に切り替え、それでもだめなら ▶ を出す */
+  clearTimeout(OP.kick); var t0 = v.currentTime;
+  OP.kick = setTimeout(function(){
+    if(opMoving() || OP.blocked || !$('op').classList.contains('on') || !OP.ready || v.error) return;
+    if(v.currentTime > t0 + 0.1) return;
+    if(!OP.fellBack && OP.url) opFail(); else opBlocked();
+  }, 3000);
   opRender();
 }
 /* 自動再生が止められた(省電力モード・データセーバーなど)→ ▶ を出して、タップを待つ(勝手に閉じない) */
