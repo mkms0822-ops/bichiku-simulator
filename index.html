@@ -268,6 +268,26 @@ body.op-lock{overflow:hidden}
 .op-b.skip{background:transparent;color:#cfd8e6}
 @media (max-width:520px){.op{gap:12px;padding:10px}.op-b{padding:9px 14px}}
 
+/* メニュー */
+.log.mnu{width:min(480px,100%)}
+.mnu-list{display:grid;gap:8px;margin-top:6px}
+.mnu-i{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--tx);border-radius:12px;padding:11px 14px;font:inherit;font-weight:700;font-size:calc((15px) * var(--k));text-decoration:none;cursor:pointer;line-height:1.4}
+.mnu-i:hover{border-color:rgba(255,207,74,.6)}
+.mnu-i .ic{font-size:calc((20px) * var(--k));width:28px;text-align:center;flex-shrink:0}
+.mnu-i small{display:block;font-weight:400;font-size:calc((12px) * var(--k));color:var(--tx2)}
+/* プライバシーポリシー */
+.log.pp{width:min(720px,100%);max-height:86vh}
+.pp-lead{border:1px solid rgba(255,207,74,.45)!important;background:rgba(255,207,74,.10);border-radius:10px;padding:10px 12px!important;line-height:1.7}
+.pp h4{margin:14px 0 6px;font-size:calc((15px) * var(--k));color:var(--acc)}
+.pp ul{margin:0;padding-left:1.3em}
+.pp li{margin:0 0 6px;font-size:calc((14px) * var(--k));line-height:1.7}
+.pp a{color:var(--blu)}
+.pp-date{text-align:right;color:var(--tx2);border-bottom:0!important;margin-top:12px!important}
+/* タイトル下のリンク */
+.t-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.t-links a,.t-links button{border:1px solid var(--line);background:var(--bg2);color:var(--tx);border-radius:99px;padding:8px 14px;font:inherit;font-weight:700;font-size:calc((13px) * var(--k));text-decoration:none;cursor:pointer}
+.t-links a:hover,.t-links button:hover{border-color:rgba(255,207,74,.6)}
+
 /* ===== 備蓄シミュレーター追加分 ===== */
 .hero{background:radial-gradient(120% 90% at 20% 0%,#163a2c 0%,#141b2b 55%,#0b1019 100%)}
 .hero .kick{background:#3ddc97;color:#062a1a}
@@ -339,6 +359,7 @@ body.op-lock{overflow:hidden}
     </a>
     <div class="tagline">備蓄サバイバル<br>シミュレーター</div>
     <div class="hdr-tools" role="toolbar" aria-label="表示と共有">
+      <button class="ht-btn" type="button" onclick="openMenu()" title="メニュー" aria-label="メニュー" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <button class="ht-btn" type="button" onclick="dwaShare(event)" title="共有" aria-label="共有"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
       <button class="ht-btn" type="button" onclick="dwaCopyLink()" title="リンクをコピー" aria-label="リンクをコピー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button>
       <button class="ht-btn" type="button" onclick="dwaToggleTheme()" title="ダーク/ライト切替" aria-label="ダーク/ライト切替"><svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
@@ -381,6 +402,10 @@ body.op-lock{overflow:hidden}
         <li>7日間を乗り切ると、ランク(S〜D)と、<b>あなたの家族に本当に必要だった備え</b>が表示されます。</li>
       </ol>
       <p class="note">1人1日あたり「水3リットル・食事3食・トイレ5回」で計算しています。地震の規模・ライフラインの復旧・支援物資の届き方は、過去の大規模地震を参考にしたゲーム上の想定です。実際の状況は、お住まいの自治体の情報を確認してください。備えの費用は目安です。</p>
+      <div class="t-links">
+        <a href="https://bousai0111.info/quiz.html?v=1793757485404#goods" target="_blank" rel="noopener">🛒 防災グッズリンク集(Amazon)↗</a>
+        <button type="button" onclick="openPriv()">📄 プライバシーポリシー・ご利用にあたって</button>
+      </div>
     </div>
   </section>
 
@@ -463,6 +488,88 @@ body.op-lock{overflow:hidden}
 <div class="ov" id="ovLog" onclick="if(event.target===this)closeLog()"><div class="log" role="dialog" aria-modal="true">
   <h3>これまでの記録</h3><div id="logBody"></div>
   <div style="text-align:right;margin-top:8px"><button class="back" type="button" onclick="closeLog()">閉じる</button></div>
+</div></div>
+
+
+<div class="ov" id="ovMenu" onclick="if(event.target===this)closeMenu()"><div class="log mnu" role="dialog" aria-modal="true" aria-label="メニュー">
+  <h3>☰ メニュー</h3>
+  <div class="mnu-list">
+    <a class="mnu-i" href="https://bousai0111.info/quiz.html?v=1793757485404#goods" target="_blank" rel="noopener" onclick="closeMenu()"><span class="ic">🛒</span><span>防災グッズリンク集(Amazon)<small>水・食料・簡易トイレなど、備えに役立つグッズの紹介ページ(DWA防災情報センター)を開きます ↗</small></span></a>
+    <button class="mnu-i" type="button" onclick="closeMenu();openPriv()"><span class="ic">📄</span><span>プライバシーポリシー・ご利用にあたって<small>このシミュレーターの位置づけ、保存する情報、免責事項など</small></span></button>
+    <button class="mnu-i" type="button" onclick="closeMenu();openSnd()"><span class="ic">🎵</span><span>BGM・音量<small>ロック・クラシック・シンセから選べます</small></span></button>
+    <button class="mnu-i" type="button" onclick="closeMenu();opStart(true)"><span class="ic">🎬</span><span>オープニングを音ありで見る</span></button>
+    <a class="mnu-i" href="https://bousai0111.info/" target="_blank" rel="noopener" onclick="closeMenu()"><span class="ic">🏠</span><span>DWA防災情報センター<small>トップページを開きます ↗</small></span></a>
+  </div>
+  <div style="text-align:right;margin-top:10px"><button class="back" type="button" onclick="closeMenu()">閉じる</button></div>
+</div></div>
+
+<div class="ov" id="ovPriv" onclick="if(event.target===this)closePriv()"><div class="log pp" role="dialog" aria-modal="true" aria-labelledby="ppTitle">
+  <h3 id="ppTitle">📄 プライバシーポリシー・ご利用にあたって</h3>
+  <p class="pp-lead"><b>「備蓄サバイバル・シミュレーター」は、災害への備えを考えるきっかけとして参考にしていただくためのシミュレーターです。あくまでもシミュレーションゲームであり、実際の災害での安全や結果を保証するものではありません。</b></p>
+
+  <h4>1. このシミュレーターの位置づけ</h4>
+  <ul>
+    <li>地震の規模、ライフライン(電気・水道・ガス)の止まり方と復旧、支援物資の届き方、避難所の様子などは、過去の大規模地震を参考にした<b>ゲーム上の想定</b>です。実際の災害では、地域・季節・時間帯・住まい・家族の状況によって大きく異なります。</li>
+    <li>「1人1日あたり水3リットル・食事3食・トイレ5回」などの数値や、備えの費用は<b>目安</b>です。必要な量は、年齢・体調・持病・ペットの有無などで変わります。</li>
+    <li>ランク(S〜D)や「必要だった備え」の表示は、ゲームの結果を分かりやすく示すためのもので、<b>あなたや家族の安全を評価・保証するものではありません</b>。</li>
+    <li>登場する人物・家族・地名・場面・画像はすべて架空のもので、実在の人物・団体・場所とは関係ありません。画像は場面をイメージするためのものです。</li>
+    <li>医療・健康(けが、持病、熱中症、エコノミークラス症候群、感染症など)に関する記述は一般的な注意で、診断や治療の代わりにはなりません。体調に不安があるときは、医師・薬剤師・救護所に相談してください。</li>
+  </ul>
+
+  <h4>2. 実際の災害のときは</h4>
+  <ul>
+    <li>お住まいの市区町村の<b>ハザードマップ・避難情報</b>、気象庁・消防庁・内閣府などの<b>公式情報</b>を必ず確認し、その指示に従ってください。</li>
+    <li>命を守る行動を最優先にしてください。このシミュレーターの内容を理由に、避難をためらったり遅らせたりしないでください。</li>
+    <li>家庭の備えは、自治体や公的機関の防災ガイドも参考に、家族で話し合って決めてください。</li>
+  </ul>
+
+  <h4>3. 取得する情報</h4>
+  <ul>
+    <li>氏名・住所・電話番号・メールアドレスなどの<b>個人情報を入力・取得することはありません</b>。</li>
+    <li>ゲーム中の選択(家族構成・住まい・季節・備えなど)は、お使いのブラウザの中だけで処理し、サーバーへ送信しません。</li>
+    <li>アクセス解析ツール・広告配信のためのクッキーは使用していません。なお、ページを置いているサーバー(ホスティング事業者)では、一般的なアクセス記録(IPアドレス・日時・ブラウザの種類など)が自動的に記録される場合があります。</li>
+  </ul>
+
+  <h4>4. 端末に保存するもの</h4>
+  <ul>
+    <li>次回も同じ設定で遊べるよう、ブラウザの保存機能(ローカルストレージ)に、<b>表示の設定(明るさ・文字サイズ・文字の速さ)、サウンドの設定(オン/オフ・音量・BGMの曲・再生のしかた)、ベスト記録</b>だけを保存します。</li>
+    <li>保存した内容は、お使いの端末の中にだけ残り、外部へは送信されません。ブラウザの設定から「サイトデータの削除」を行うと消去できます。</li>
+  </ul>
+
+  <h4>5. 外部サイトへのリンク</h4>
+  <ul>
+    <li>「防災グッズリンク集」には、Amazonなど外部の通販サイトへのリンクが含まれます。リンク先での購入、個人情報の取り扱いは、各サイトの利用規約・プライバシーポリシーに従います。</li>
+    <li>リンク先の商品の内容・価格・在庫・品質について、当センターは保証しません。購入の前に、商品ページの説明やレビュー、賞味期限・使用期限をご確認ください。</li>
+    <li>リンクには、アフィリエイト(成果報酬型の広告)を含む場合があります。</li>
+    <li>共有ボタン(X・LINE)は、押したときだけ各サービスのページを開きます。</li>
+  </ul>
+
+  <h4>6. 音声・音楽・画像</h4>
+  <ul>
+    <li>ロックのBGMは、BGMer(フリーBGM)の楽曲を使用しています。効果音の一部は、ブラウザの中で合成しています。</li>
+    <li>サウンドは最初はオフ(オープニングは音なし)で、ボタンを押したときだけ鳴ります。周りの状況に合わせて音量を調整してください。</li>
+  </ul>
+
+  <h4>7. 免責事項</h4>
+  <ul>
+    <li>内容には正確を期していますが、その正確性・完全性・最新性を保証するものではありません。</li>
+    <li>このシミュレーターの利用、またはその内容にもとづく判断・行動によって生じたいかなる損害についても、当センターは責任を負いかねます。</li>
+    <li>予告なく内容の変更・公開の停止をすることがあります。</li>
+  </ul>
+
+  <h4>8. お子さまのご利用</h4>
+  <ul><li>災害やけが、体調不良の場面が出てきます。お子さまが遊ぶときは、保護者の方が一緒に内容を確認し、家族の備えを話し合うきっかけにしてください。</li></ul>
+
+  <h4>9. 著作権</h4>
+  <ul><li>文章・画像・映像・プログラムなどの著作権は、DWA防災情報センターまたは各権利者に帰属します。無断での転載・複製・再配布はご遠慮ください。リンクや共有は自由です。</li></ul>
+
+  <h4>10. 改定とお問い合わせ</h4>
+  <ul>
+    <li>このポリシーは、必要に応じて予告なく改定することがあります。改定後の内容は、このページに掲載した時点から適用します。</li>
+    <li>お問い合わせは、<a href="https://bousai0111.info/" target="_blank" rel="noopener">DWA防災情報センター</a>までお願いします。</li>
+  </ul>
+  <p class="pp-date">制定:2026年11月4日 / DWA防災情報センター</p>
+  <div style="text-align:right;margin-top:10px"><button class="back" type="button" onclick="closePriv()">閉じる</button></div>
 </div></div>
 
 <div class="ov" id="ovSnd" onclick="if(event.target===this)closeSnd()"><div class="log snd" role="dialog" aria-modal="true" aria-label="BGMと音量">
@@ -1152,6 +1259,17 @@ function audioKick(){
   }
 }
 ['pointerdown', 'touchend', 'keydown'].forEach(function(t){ document.addEventListener(t, audioKick, {passive:true, capture:true}); });
+
+/* ===================== メニュー・プライバシーポリシー ===================== */
+function openMenu(){ $('ovMenu').classList.add('on'); }
+function closeMenu(){ $('ovMenu').classList.remove('on'); }
+function openPriv(){ var o = $('ovPriv'); o.classList.add('on'); var b = o.querySelector('.log'); if(b) b.scrollTop = 0; }
+function closePriv(){ $('ovPriv').classList.remove('on'); }
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  if($('ovPriv').classList.contains('on')) closePriv();
+  else if($('ovMenu').classList.contains('on')) closeMenu();
+});
 
 /* =========================================================
    備蓄サバイバル・シミュレーター 物語と計算
