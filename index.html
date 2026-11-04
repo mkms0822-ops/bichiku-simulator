@@ -1077,6 +1077,8 @@ document.addEventListener('visibilitychange', function(){
 /* ===================== オープニング映像 ===================== */
 /* 最初は音なしで自動再生。「音を出して最初から見る」で、音ありで頭から見直せる */
 var OP = {bgm:false};
+/* 動画が実際に進んでいるか(再生中で、再生位置が0より先) */
+function opMoving(){ var v = $('opV'); return !!v && !v.paused && !v.ended && v.currentTime > 0.1; }
 function opRender(){
   var v = $('opV'), b = $('opSnd'); if(!v || !b) return;
   b.textContent = v.muted ? '🔇 音を出して最初から見る' : '🔊 音あり(押すとミュート)';
@@ -1097,7 +1099,8 @@ function opStart(sound){
   v.muted = !sound;
   if(sound) opPauseBgm();
   OP.started = false;
-  setTimeout(function(){ if(!OP.started && o.classList.contains('on')) $('opPlay').hidden = false; }, 3000);
+  setTimeout(function(){ if(!opMoving() && o.classList.contains('on')) $('opPlay').hidden = false; }, 3000);
+  try{ v.pause(); }catch(e){}
   try{ v.currentTime = 0; }catch(e){}
   var p = v.play();
   if(p && p.catch) p.catch(function(){
@@ -1125,11 +1128,12 @@ function opClose(){
   v.addEventListener('error', fail);
   v.addEventListener('ended', function(){ setTimeout(opClose, 600); });
   v.addEventListener('playing', function(){ $('opPlay').hidden = true; OP.started = true; });
+  v.addEventListener('timeupdate', function(){ if(v.currentTime > 0.15 && !v.paused){ OP.started = true; $('opPlay').hidden = true; } });
   /* 画面のどこをタップしても再生できる(省電力モードなどで自動再生が止められたとき用) */
   v.addEventListener('click', function(){ if(v.paused){ var q = v.play(); if(q && q.catch) q.catch(function(){}); } });
   /* 3秒たっても始まらなければ「▶」を出し、12秒たっても始まらなければタイトルへ進む(通信が遅いとき用) */
-  setTimeout(function(){ if(!OP.started && $('op').classList.contains('on')) $('opPlay').hidden = false; }, 3000);
-  setTimeout(function(){ if(!OP.started && $('op').classList.contains('on')) opClose(); }, 12000);
+  setTimeout(function(){ if(!opMoving() && $('op').classList.contains('on')) $('opPlay').hidden = false; }, 3000);
+  setTimeout(function(){ if(!OP.started && !opMoving() && $('op').classList.contains('on')) opClose(); }, 12000);
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && $('op').classList.contains('on')) opClose(); });
   v.muted = true; opRender();
   var p = v.play();
