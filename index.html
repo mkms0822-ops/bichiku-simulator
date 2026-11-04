@@ -52,6 +52,12 @@ html:not(.light) .ic-sun{display:none} html.light .ic-moon{display:none}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 #sharePop{position:fixed;top:64px;right:14px;z-index:120;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px;display:none;min-width:200px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #sharePop.on{display:block}
+#sharePop.center{top:50%;left:50%;right:auto;transform:translate(-50%,-50%);z-index:10001;min-width:min(300px,calc(100vw - 32px))}
+#sharePop .sp-t{font-weight:800;font-size:13px;color:var(--mu,#8a96a8);padding:6px 12px 4px}
+#sharePop [hidden]{display:none}
+#sharePop .sp-x{text-align:center!important;color:var(--mu,#8a96a8)!important;margin-top:4px;border-top:1px solid var(--line)!important;border-radius:0 0 10px 10px!important}
+#spBack{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);display:none}
+#spBack.on{display:block}
 #sharePop a,#sharePop button{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;text-decoration:none;color:var(--tx);background:none;border:0;font-size:14px}
 #sharePop a:hover,#sharePop button:hover{background:rgba(127,127,127,.12)}
 
@@ -377,10 +383,14 @@ body.op-lock{overflow:hidden}
     </div>
   </div>
 </header>
+<div id="spBack" onclick="closeShare()"></div>
 <div id="sharePop" role="dialog" aria-label="共有">
-  <a id="spX" target="_blank" rel="noopener">𝕏 X(旧Twitter)で共有</a>
-  <a id="spLine" target="_blank" rel="noopener">💬 LINEで共有</a>
-  <button type="button" onclick="dwaCopyLink();closeShare()">🔗 リンクをコピー</button>
+  <div id="spTitle" class="sp-t">このページを共有</div>
+  <a id="spX" target="_blank" rel="noopener" onclick="closeShare()">𝕏 X(旧Twitter)で共有</a>
+  <a id="spLine" target="_blank" rel="noopener" onclick="closeShare()">💬 LINEで共有</a>
+  <button id="spCopy" type="button" onclick="dwaShareCopy()">🔗 リンクをコピー</button>
+  <button id="spNative" type="button" onclick="dwaShareNative()" hidden>📱 その他のアプリで共有</button>
+  <button type="button" class="sp-x" onclick="closeShare()">閉じる</button>
 </div>
 
 <main class="wrap">
@@ -486,7 +496,7 @@ body.op-lock{overflow:hidden}
         <ul class="tl" id="rTl"></ul>
         <div class="btns" style="justify-content:center">
           <button class="btn" type="button" onclick="restart()">↺ 別の選択でもう一度</button>
-          <button class="btn sub" type="button" style="color:var(--tx);border-color:var(--line)" onclick="shareResult()">結果を共有</button>
+          <button class="btn sub" type="button" style="color:var(--tx);border-color:var(--line)" onclick="shareResult(event)">結果を共有</button>
           <button class="btn sub" type="button" style="color:var(--tx);border-color:var(--line)" onclick="show('scTitle')">タイトルへ</button>
         </div>
         <p class="disc">このゲームの被害の出方・物資の届き方は、過去の大規模地震の事例を参考にしたゲーム上の想定です。必要な量は「1人1日 水3リットル・食事3食・トイレ5回」で計算しています(夏は水を多めに)。最低3日分、できれば1週間分を目安に、ふだん使う物を少し多めに買って使いながら補充する「ローリングストック」で備えましょう。</p>
@@ -621,15 +631,37 @@ function dwaCopyLink(){
   else { fallbackCopy(u); done(); }
 }
 function fallbackCopy(u){ var a = document.createElement('textarea'); a.value = u; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(a); }
+var SHARE = {text:'', url:''};
+/* 共有メニュー:X・LINE・コピー・(スマホなら)端末の共有機能。
+   結果の共有は画面の中央に出す。端末の共有機能が使えない・失敗しても、メニューから共有できる */
 function dwaShare(ev, text){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
   var u = pageUrl(), tx = text || '備蓄サバイバル・シミュレーター|備えたもので、地震後の1週間はこう変わる。あなたは7日間を乗り切れるか?';
-  if(navigator.share){ navigator.share({title:'備蓄サバイバル・シミュレーター', text:tx, url:u}).catch(function(){}); return; }
+  SHARE.text = tx; SHARE.url = u;
   document.getElementById('spX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tx) + '&url=' + encodeURIComponent(u);
-  document.getElementById('spLine').href = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(u);
-  document.getElementById('sharePop').classList.add('on');
-  if(ev) ev.stopPropagation();
+  document.getElementById('spLine').href = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(u) + '&text=' + encodeURIComponent(tx);
+  var pop = document.getElementById('sharePop'), res = !!text;
+  pop.classList.toggle('center', res);
+  document.getElementById('spTitle').textContent = res ? '結果を共有' : 'このページを共有';
+  document.getElementById('spCopy').textContent = res ? '📋 結果の文章とリンクをコピー' : '🔗 リンクをコピー';
+  document.getElementById('spNative').hidden = !navigator.share;
+  document.getElementById('spBack').classList.toggle('on', res);
+  pop.classList.add('on');
 }
-function closeShare(){ document.getElementById('sharePop').classList.remove('on'); }
+function dwaShareCopy(){
+  var t = SHARE.text && document.getElementById('sharePop').classList.contains('center') ? SHARE.text + '\n' + SHARE.url : SHARE.url || pageUrl();
+  var done = function(){ toast(t === SHARE.url || t === pageUrl() ? 'リンクをコピーしました' : '結果の文章とリンクをコピーしました'); };
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(t).then(done, function(){ fallbackCopy(t); done(); }); }
+  else { fallbackCopy(t); done(); }
+  closeShare();
+}
+function dwaShareNative(){
+  var d = {title:'備蓄サバイバル・シミュレーター', text:SHARE.text, url:SHARE.url || pageUrl()};
+  closeShare();
+  try{ navigator.share(d).catch(function(e){ if(!e || e.name !== 'AbortError') dwaShareCopy(); }); }catch(e){ dwaShareCopy(); }
+}
+function closeShare(){ document.getElementById('sharePop').classList.remove('on'); document.getElementById('spBack').classList.remove('on'); }
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeShare(); });
 document.addEventListener('click', function(e){ var p = document.getElementById('sharePop'); if(p.classList.contains('on') && !p.contains(e.target)) closeShare(); });
 
 /* ===================== サウンド(Web Audioで合成) ===================== */
@@ -2308,9 +2340,9 @@ function showResult(rank, label, collapsed){
   $('rTl').innerHTML = S.tl.map(function(x){ return '<li><b>' + (x.d ? x.d + '日目' : '準備') + '</b>' + esc(x.t) + '</li>'; }).join('');
   show('scResult');
 }
-function shareResult(){
+function shareResult(ev){
   var r = $('rRank').textContent;
-  dwaShare(null, '備蓄サバイバル・シミュレーターで7日間を過ごし、ランク' + r + '「' + $('rLabel').textContent + '」でした。あなたの備えで、地震後の1週間はどう変わる?');
+  dwaShare(ev, '備蓄サバイバル・シミュレーターで7日間を過ごし、ランク' + r + '「' + $('rLabel').textContent + '」でした。あなたの備えで、地震後の1週間はどう変わる?');
 }
 
 /* =========================================================
