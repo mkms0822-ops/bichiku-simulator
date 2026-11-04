@@ -932,6 +932,13 @@ var PALETTE = {
    画像を直接埋め込む場合は IMAGES に キー: 'data:image/webp;base64,...' または URL を書く。 */
 var IMG_DIR = 'img/', IMG_EXT = ['.webp', '.jpg', '.png'], IMAGES = {}, imgCache = {}, curImg = null;
 function resolveImg(key, cb){
+  if(key.indexOf('|') >= 0){            /* 'a|b|c' : 先頭から順に探し、見つかった画像を使う */
+    var parts = key.split('|'), j = 0;
+    return (function nextKey(){
+      if(j >= parts.length) return cb(null);
+      resolveImg(parts[j++], function(src){ src ? cb(src) : nextKey(); });
+    })();
+  }
   if(IMAGES[key]) return cb(IMAGES[key]);
   if(key in imgCache) return cb(imgCache[key]);
   var i = 0;
@@ -1477,6 +1484,8 @@ async function main(){
     if(d === 7) break;
     await commonEvent(d); if(S.hp <= 0) break;
     await modeEvent(d); if(S.hp <= 0) break;
+    if(S.mode === 'shelter' && d >= 2){ await shelterExtra(d); if(S.hp <= 0) break; }
+    if(d <= 5){ await stockUse(d); if(S.hp <= 0) break; }
     await familyEvent(d); if(S.hp <= 0) break;
     await procure(d, 1); if(S.hp <= 0) break;
     if(!S.supplied && S.hp > 15){ await procure(d, 2); if(S.hp <= 0) break; }
@@ -2026,14 +2035,14 @@ async function procure(d, part){
     else if(rnd() < 0.6){ chg({mind:+5, water:2, food:2}); await say(H('近所の人が、余った水と食料を分けてくれました。<<助け合いが身にしみます。>>'), {img:'share_receive', ic:'🤝', pal:'good'}); }
     else { chg({mind:-2}); await say('みんな自分のことで精いっぱいで、分けてもらえる物はありませんでした。'); }
   } else {
-    chg({hp:part === 2 ? +4 : +6, mind:+3}); await say(part === 2 ? '今日はもう休むことにしました。' : '体を休めることにしました。', {img:'rest', ic:'😴', pal:'day'});
+    chg({hp:part === 2 ? +4 : +6, mind:+3}); await say(part === 2 ? '今日はもう休むことにしました。' : '体を休めることにしました。', {img:restImg(), ic:'😴', pal:'day'});
   }
 }
 
 /* ===================== 1日の終わり ===================== */
 async function dayEnd(d){
   var need = dailyNeed(), I = S.inv, rows = [], msgs = [];
-  scene({img:'night_end', ic:'🌙', lb:d + '日目の夜', pal:'night', mood:'night'});
+  scene({img:nightImg(), ic:'🌙', lb:d + '日目の夜', pal:'night', mood:'night'});
   /* 避難所の配給・設備 */
   var toiletFree = false;
   if(S.mode === 'shelter'){
@@ -2088,7 +2097,7 @@ async function dayEnd(d){
   if(I.batt <= 0 && !S.inv.radio && S.mode !== 'shelter' && !S.supplied){ dm -= 5; rows.push(['📵 情報', '<span class="bad">電池切れで情報が入らない</span>']); trouble('スマホの電池が切れ、情報が入らなくなった'); }
   I.water = Math.round(I.water * 10) / 10;
   var html = '<b>' + d + '日目の夜</b><table class="sumt">' + rows.map(function(r){ return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; }).join('') + '</table>';
-  await say(html, {img:'night_end', ic:'🌙', lb:d + '日目の終わり', pal:'night'});
+  await say(html, {img:nightImg(), ic:'🌙', lb:d + '日目の終わり', pal:'night'});
   var ch = {}; if(dh) ch.hp = Math.round(dh); if(dm) ch.mind = Math.round(dm); if(dy) ch.hyg = Math.round(dy);
   chg(ch);
   var warn = [];
@@ -2099,7 +2108,7 @@ async function dayEnd(d){
   var lackT = [];
   if(I.water < tomorrow.water && !S.supplied) lackT.push('水'); if(I.food < tomorrow.food && !S.supplied) lackT.push('食料'); if(I.toilet < tomorrow.toilet && !toiletFree && d < 2) lackT.push('トイレ');
   if(lackT.length) warn.push('明日の分の[' + lackT.join('・') + ']が足りません。');
-  if(warn.length) await say(H(warn.join('<br>')), {img:S.hp < 35 ? 'warn_exhausted' : 'night_end', ic:S.hp < 35 ? '🥀' : '🌙', pal:S.hp < 35 ? 'bad' : 'night', mood:S.hp < 35 ? 'tense' : 'night'});
+  if(warn.length) await say(H(warn.join('<br>')), {img:S.hp < 35 ? 'warn_exhausted' : nightImg(), ic:S.hp < 35 ? '🥀' : '🌙', pal:S.hp < 35 ? 'bad' : 'night', mood:S.hp < 35 ? 'tense' : 'night'});
   if(S.hyg < 25 && !S.infected && rnd() < 0.5){ S.infected = true; chg({hp:-10}); await say(H('{不衛生な環境で、おなかをこわしてしまいました。}'), {img:'sick_fever', ic:'🤒', pal:'bad'}); trouble('不衛生な環境で体調を崩した'); }
   tl(MODE[S.mode].t + 'で過ごす。' + (sw || sf || st ? (sw ? '水' : '') + (sf ? '食料' : '') + (st ? 'トイレ' : '') + 'が不足。' : '必要な物は足りた。'));
 }
@@ -2165,6 +2174,226 @@ function showResult(rank, label, collapsed){
 function shareResult(){
   var r = $('rRank').textContent;
   dwaShare(null, '備蓄サバイバル・シミュレーターで7日間を過ごし、ランク' + r + '「' + $('rLabel').textContent + '」でした。あなたの備えで、地震後の1週間はどう変わる?');
+}
+
+/* =========================================================
+   追加:避難所のトラブル・備蓄品を使う場面・場所ごとの寝る場面
+   ========================================================= */
+/* 場所ごとの画像(専用画像がまだ無いときは、近い場面の画像を代わりに表示) */
+var MODE_IMG = {
+  night:{shelter:'night_shelter|shelter_sleepless', home:'night_home|night_end', car:'night_car|car_cramped', tent:'night_tent|tent_cold', relative:'night_relative|morning_relative'},
+  rest:{shelter:'rest_shelter|shelter_gym', home:'rest_home|rest', car:'rest_car|car_tired', tent:'rest_tent|tent_tired', relative:'rest_relative|morning_relative'}
+};
+function nightImg(){ return MODE_IMG.night[S.mode] || 'night_end'; }
+function restImg(){ return MODE_IMG.rest[S.mode] || 'rest'; }
+function pick(arr){ return arr[Math.floor(rnd() * arr.length)]; }
+function shuffle(a){ a = a.slice(); for(var i = a.length - 1; i > 0; i--){ var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+/* ===================== 避難所のトラブル(2〜6日目に1つずつ) ===================== */
+var SHELTER_TR = [
+  {id:'privacy', run:async function(){
+    await say(H('{間仕切りがなく、着替えや授乳をする場所がありません。}周りの目が気になって、なかなか着替えられません。'), {img:'shelter_privacy|shelter_gym', ic:'🚪', lb:'プライバシー', pal:'shelter', mood:'tense'});
+    var a = await ask('どうする?', [
+      {t:'運営の人に、女性専用の更衣室・授乳室をつくってほしいと相談する', v:'ok'},
+      {t:'迷惑をかけたくないので、がまんする', v:'ng'}
+    ], {img:'shelter_privacy|shelter_gym', ic:'🚪', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:+5}); await say(H('運営の人と話し合い、<<段ボールの間仕切りで、更衣室と授乳スペースができました。>>'), {pal:'good'}); }
+    else { chg({mind:-7, hyg:-4}); await say(H('{着替えられない日が続き、気持ちも沈んでいきます。}'), {pal:'bad'}); trouble('避難所で着替えや授乳の場所がなく困った'); }
+    point('避難所には、女性・子育て中の人のための更衣室や授乳スペースを。困りごとはがまんせず運営に伝える。');
+  }},
+  {id:'supply', run:async function(){
+    await say(H('配給の列で、{「数が足りない」「割り込みだ」と言い争いが起きています。}'), {img:'shelter_supply_dispute|ration_line', ic:'📦', lb:'配給のもめごと', pal:'shelter', mood:'tense'});
+    var a = await ask('どうする?', [
+      {t:'運営のルール(番号札・家族ごと)に従って並ぶ', v:'ok'},
+      {t:'自分の分を確保しようと、前のほうに割り込む', v:'ng'}
+    ], {img:'shelter_supply_dispute|ration_line', ic:'📦', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:+2}); await say(H('ルールどおりに並びました。<<高齢の人や子ども連れが先に受け取れるよう、譲り合う声も出てきました。>>'), {pal:'good'}); }
+    else { chg({mind:-8}); await say(H('{周りの人とけんかになり、気まずい空気のまま過ごすことに。}'), {pal:'bad'}); trouble('配給の列でもめごとになった'); }
+    point('物資の配り方は、運営のルールに従う。高齢者・妊婦・子ども・障害のある人など、配慮が必要な人を優先する。');
+  }},
+  {id:'theft', run:async function(){
+    await say(H('朝になると、{近くの人の財布とスマホがなくなっていた}と騒ぎになっています。'), {img:'shelter_theft|shelter_sleepless', ic:'👛', lb:'盗難', pal:'shelter', mood:'tense'});
+    var a = await ask('今夜から、貴重品はどうする?', [
+      {t:'財布やスマホは小さなバッグに入れ、身につけたまま眠る', v:'ok'},
+      {t:'荷物の中に入れたままにしておく', v:'ng'}
+    ], {img:'shelter_theft|shelter_sleepless', ic:'👛', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:+2}); await say('貴重品を身につけて眠ると、少し安心できました。', {pal:'good'}); }
+    else if(rnd() < 0.5){ chg({yen:20000, mind:-10}); await say(H('{翌朝、荷物の中の財布がなくなっていました。}'), {pal:'bad'}); trouble('避難所で貴重品を盗まれた'); }
+    else { chg({mind:-3}); await say(H('何も起きませんでしたが、{夜中に荷物のことが気になって何度も目が覚めました。}')); }
+    point('避難所では、貴重品を身につけ、荷物から目を離さない。盗難は運営と警察に届ける。');
+  }},
+  {id:'nighttoilet', run:async function(){
+    await say(H('夜のトイレは、校舎の外の仮設トイレ。{暗くて人目がなく、一人で行くのは不安です。}'), {img:'shelter_night_toilet|shelter_toilet_dirty', ic:'🌃', lb:'夜のトイレ', pal:'night', mood:'night'});
+    var a = await ask('どうする?', [
+      {t:'家族や知り合いと2人以上で、明かりを持って行く', v:'ok'},
+      {t:'みんな寝ているので、一人で暗い中を行く', v:'ng'}
+    ], {img:'shelter_night_toilet|shelter_toilet_dirty', ic:'🌃', pal:'night'});
+    if(a === 'ok'){ chg({mind:+2}); await say(H(S.inv.light ? '<<ライトで足元を照らし、2人で安心して行けました。>>' : '2人で行けて安心しましたが、{明かりがなく足元が見えにくい}です。'), {pal:S.inv.light ? 'good' : ''}); }
+    else { chg({hp:-2, mind:-6}); await say(H('{暗い通路でつまずき、ひざをすりむきました。}物陰が多く、こわい思いもしました。'), {pal:'bad'}); trouble('夜、一人で暗い中をトイレに行き、危ない目にあった'); }
+    point('夜のトイレは複数人で。ライトや防犯ブザーを持ち、明るい道を通る。避難所の運営に照明を相談する。');
+  }},
+  {id:'bed', run:async function(){
+    await say(H('床に毛布を敷いただけで寝ていると、{体のあちこちが痛み、' + (S.season === 'winter' ? '床からの冷えで眠れません。}' : 'ほこりを吸ってせきが出ます。}')), {img:'shelter_cardboard_bed|shelter_sleep_spot', ic:'📦', lb:'床で寝る', pal:'shelter'});
+    var a = await ask('段ボールベッドが届いたそうです。', [
+      {t:'組み立てを手伝い、ベッドで寝る', v:'ok'},
+      {t:'面倒なので、このまま床で寝る', v:'ng'}
+    ], {img:'shelter_cardboard_bed|shelter_sleep_spot', ic:'📦', pal:'shelter'});
+    if(a === 'ok'){ chg({hp:+4, mind:+3}); await say(H('<<床から離れて眠れるようになり、体がずいぶん楽になりました。>>'), {pal:'good'}); }
+    else { chg({hp:-3}); await say(H('{冷えとほこりで、体調がすぐれません。}'), {pal:'bad'}); }
+    point('床に直接寝ると、冷え・ほこり・エコノミークラス症候群の原因に。段ボールベッドで床から離して寝る。');
+  }},
+  {id:'allergy', run:async function(){
+    await say(H('配給のパンやおにぎりは、{原材料がわかりません。}同じスペースの家族の子どもに{食物アレルギー}があり、食べられる物がなく困っています。'), {img:'shelter_allergy|shelter_cold_meal', ic:'🥖', lb:'食物アレルギー', pal:'shelter'});
+    var a = await ask('どうする?', [
+      {t:'一緒に運営に伝え、原材料の表示とアレルギー対応の食事を相談する', v:'ok'},
+      {t:'自分たちには関係ないので、何もしない', v:'ng'}
+    ], {img:'shelter_allergy|shelter_cold_meal', ic:'🥖', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:+5}); await say(H('運営が配給の原材料を貼り出し、<<アレルギー対応の非常食も取り寄せてくれました。>>「ありがとう」と何度もお礼を言われました。'), {pal:'good'}); }
+    else { chg({mind:-2}); await say('その家族は、持ってきたわずかな食べ物でしのいでいるようです。'); }
+    point('食物アレルギーのある人は、アレルギー対応の非常食を自分で備える。避難所では「食べられない物」をはっきり伝える。');
+  }},
+  {id:'kids', run:async function(){
+    var mine = S.kids || S.baby;
+    await say(H(mine ? '子どもが走り回ったり泣いたりすると、{周りから「静かにさせて」と言われてしまいました。}' : '夜遅くまで子どもたちが走り回っていて、{なかなか眠れません。}'), {img:'shelter_kids_noise|shelter_gym', ic:'🧒', lb:'子どもの声', pal:'shelter', mood:'tense'});
+    var a = await ask('どうする?', [
+      {t:'運営を通して、子どもが遊べる場所(キッズスペース)づくりを相談する', v:'ok'},
+      {t:mine ? '子どもを叱って、じっとさせる' : '直接、強く注意する', v:'ng'}
+    ], {img:'shelter_kids_noise|shelter_gym', ic:'🧒', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:mine ? +6 : +3}); await say(H('空き教室が子どもの遊び場になりました。<<子どもたちの表情が明るくなり、体育館も静かになりました。>>'), {pal:'good'}); }
+    else { chg({mind:-6}); await say(H(mine ? '{子どもはさらに不安になり、夜泣きが増えてしまいました。}' : '{言い争いになり、気まずい雰囲気になってしまいました。}'), {pal:'bad'}); trouble(mine ? '避難所で子どもの居場所がなく、子どもが不安定になった' : '避難所で周りの人と言い争いになった'); }
+    point('避難所には子どもが遊べる場所を。困りごとは直接言い合わず、運営を通して話し合う。');
+  }},
+  {id:'charge', run:async function(){
+    await say(H('充電コーナーは{長い行列。コンセントの取り合いで、口論も起きています。}'), {img:'shelter_charging_line|charging_corner', ic:'🔌', lb:'充電の取り合い', pal:'shelter', mood:'tense'});
+    var a = await ask('どうする?', [
+      {t:'「1人30分で交代」などのルールづくりに協力する', v:'ok'},
+      {t:'自分のスマホを満タンになるまで充電し続ける', v:'ng'}
+    ], {img:'shelter_charging_line|charging_corner', ic:'🔌', pal:'shelter'});
+    if(a === 'ok'){ chg({mind:+3, batt:+30}); await say(H('<<交代制になり、みんなが少しずつ充電できるようになりました。>>'), {pal:'good'}); }
+    else { chg({mind:-6, batt:+50}); await say(H('充電はできましたが、{周りから冷たい目で見られてしまいました。}'), {pal:'bad'}); trouble('充電コーナーで周りの人ともめた'); }
+    point('充電は交代制で。モバイルバッテリーを持っておくと、行列に並ばずにすむ。');
+  }},
+  {id:'elder', if:function(){ return S.elder; }, run:async function(){
+    await say(H('避難所で横になっている時間が長く、{親の足腰が弱り、ぼんやりすることが増えました。}<br>体を動かさないことで心身の機能が落ちる「生活不活発病」が心配です。'), {img:'shelter_elder_inactive|shelter_gym', ic:'👴', lb:'生活不活発病', pal:'shelter', mood:'tense'});
+    var a = await ask('どうする?', [
+      {t:'一緒に体操や散歩をし、物資の仕分けなどの役割を持ってもらう', v:'ok'},
+      {t:'疲れているので、そっとしておく', v:'ng'}
+    ], {img:'shelter_elder_inactive|shelter_gym', ic:'👴', pal:'shelter'});
+    if(a === 'ok'){ chg({hp:+3, mind:+4}); await say(H('<<朝の体操に参加するようになり、親の顔に笑顔が戻ってきました。>>'), {pal:'good'}); }
+    else { chg({hp:-4, mind:-4}); await say(H('{親はますます動かなくなり、トイレに行くのもつらそうです。}'), {pal:'bad'}); trouble('親の体力が落ち、生活不活発病が心配になった'); }
+    point('避難生活で体を動かさないと「生活不活発病」に。高齢者こそ、体操・散歩・できる役割を。');
+  }}
+];
+async function shelterExtra(d){
+  S.usedTr = S.usedTr || [];
+  var pool = SHELTER_TR.filter(function(x){ return S.usedTr.indexOf(x.id) < 0 && (!x.if || x.if()); });
+  if(!pool.length) return;
+  var t = pick(pool); S.usedTr.push(t.id);
+  await t.run();
+}
+
+/* ===================== 備蓄品を使う場面(1回のプレイで5回:1〜5日目) ===================== */
+var PLACE = {shelter:'避難所', home:'家', car:'車', tent:'テント', relative:'親戚の家'};
+var LACK_IMG = 'stock_empty|noprep_living';
+var STOCK_USE = [
+  {id:'light', modes:['shelter','home','car','tent'], have:function(){ return S.inv.light; }, img:'use_light|blackout_flashlight', lack:'blackout_dark', lb:'明かり',
+    run:async function(h, o){
+      var lead = {shelter:'消灯後の体育館は真っ暗。夜中にトイレへ行きます。', home:'停電の夜。家の中は真っ暗です。', car:'夜の駐車場は真っ暗。車の中で荷物を探します。', tent:'夜のテントの中は真っ暗です。'}[S.mode];
+      if(h){ chg({mind:+4}); await say(H(lead + '<br><<備えていたLEDランタン・懐中電灯をつけると、手元と足元が明るくなり、安心できました。>>'), o); }
+      else { chg({batt:-10, mind:-3}); await say(H(lead + '<br>{明かりがなく、スマホのライトで電池を使ってしまいました。}'), o); point('停電に備え、LEDランタン・懐中電灯と予備の電池を。両手が使えるヘッドライトも便利。'); }
+    }},
+  {id:'radio', modes:['home','car','tent'], have:function(){ return S.inv.radio; }, img:'use_radio|info_radio', lack:'info_phone', lb:'ラジオ',
+    run:async function(h, o){
+      if(h){ chg({mind:+3}); await say(H('給水や道路の情報が知りたい。<br><<手回し(電池式)ラジオで、給水所の場所と時間、通行止めの情報がわかりました。スマホの電池も節約できます。>>'), o); }
+      else { chg({batt:-12, mind:-2}); await say(H('給水や道路の情報が知りたい。<br>{スマホで調べるたびに、電池が減っていきます。}'), o); point('ラジオ(手回し・電池式)があると、スマホの電池を使わずに情報が入る。'); }
+    }},
+  {id:'mb', modes:['shelter','home','car','tent'], have:function(){ return S.inv.mb > 0; }, img:'use_mobile_battery|charging_corner', lack:'charging_corner', lb:'充電',
+    run:async function(h, o){
+      if(h){ S.inv.mb--; chg({batt:+60}); await say(H('スマホの電池が残りわずか。<br><<モバイルバッテリーで充電できました。>>(残り' + S.inv.mb + '個)'), o); }
+      else if(S.mode === 'shelter'){ chg({hp:-1, batt:+40}); await say(H('スマホの電池が残りわずか。<br>{充電コーナーは長い行列。2時間待って、ようやく少し充電できました。}'), o); point('モバイルバッテリーは満充電にして、持ち出し袋に。'); }
+      else { chg({batt:-5, mind:-3}); await say(H('スマホの電池が残りわずか。<br>{充電できる場所が見つかりません。}'), o); point('モバイルバッテリーは満充電にして、持ち出し袋に。'); }
+    }},
+  {id:'water', modes:['shelter','home','car','tent'], have:function(){ return S.inv.water >= dailyNeed().water * 1.5; }, img:'use_water_brush|prep_amount', lack:'water_off', lb:'歯みがき',
+    run:async function(h, o){
+      if(h){ chg({water:-Math.round(0.5 * S.n * 10) / 10, hyg:+6}); await say(H('断水で、歯みがきや手洗いが思うようにできません。<br><<備えていた保存水を少し使って、歯みがきとうがいをしました。>>口の中を清潔に保つと、肺炎の予防にもなります。'), o); }
+      else { chg({hyg:-6}); await say(H('断水で、歯みがきや手洗いが思うようにできません。<br>{水が少なく、歯みがきをがまんしました。}'), o); point('飲み水のほかに、歯みがき・手洗い用の水も。口の中が不潔だと、高齢者は誤嚥性肺炎の危険がある。'); }
+    }},
+  {id:'food', modes:['shelter','home','car','tent','relative'], have:function(){ return S.inv.food >= dailyNeed().food * (S.mode === 'relative' ? 1 : 2); }, img:'use_emergency_food|prep_what', lack:LACK_IMG, lb:'非常食',
+    run:async function(h, o){
+      if(S.mode === 'relative'){
+        if(h){ chg({mind:+6, food:-2 * S.n}); await say(H('親戚の家の食費が心配です。<br><<持ってきた非常食を出すと、「助かるよ」と喜ばれました。>>'), o); }
+        else { chg({mind:-4}); await say(H('親戚の家の食費が心配です。<br>{何も持ってこられず、食事のことで負担をかけてしまいます。}'), o); point('縁故避難でも、自分たちの水・食料を持っていくと、受け入れる側の負担が減る。'); }
+        return;
+      }
+      var lead = S.mode === 'shelter' ? '配給の食事だけでは、量も栄養も足りません。' : '今日は、備えていた非常食を食べることにしました。';
+      if(h){ chg({mind:+6, hp:+3}); await say(H(lead + '<br><<水を注ぐだけで食べられるアルファ米と、温めなくても食べられるレトルト食品。いつもの味に近く、ほっとしました。>>'), o); }
+      else { chg({mind:-4, hp:-1}); await say(H((S.mode === 'shelter' ? lead : '非常食を食べようとしましたが……') + '<br>{手元に食べられる物が少なく、空腹をがまんしました。}'), o); point('非常食は、ふだん食べ慣れた物をローリングストックで。アレルギーや好みにも合わせて。'); }
+    }},
+  {id:'aid', modes:['shelter','home','car','tent','relative'], have:function(){ return S.inv.aid; }, img:'use_first_aid|injury_foot', lack:'injury_foot', lb:'けがの手当て',
+    run:async function(h, o){
+      var lead = S.kids ? '子どもが転んで、{ひざをすりむいてしまいました。}' : '片付けや移動の途中で、{手に切り傷を作ってしまいました。}';
+      if(h){ chg({hp:+2, mind:+2}); await say(H(lead + '<br><<救急セットの消毒液と絆創膏で、すぐに手当てできました。>>'), o); }
+      else { chg({hp:-3, hyg:-3}); await say(H(lead + '<br>{手当てする物がなく、傷口が化膿しないか心配です。}'), o); point('救急セット(消毒液・絆創膏・包帯・常備薬)を持ち出し袋に。救護所の場所も確かめておく。'); }
+    }},
+  {id:'wipes', modes:['shelter','home','car','tent'], have:function(){ return S.inv.wipes; }, img:'use_body_wipes|shelter_handwash', lack:LACK_IMG, lb:'体を拭く',
+    run:async function(h, o){
+      if(h){ chg({hyg:+10, mind:+3}); await say(H('お風呂に入れない日が続き、{体のべたつきとにおいが気になります。}<br><<体拭きシート・ウェットティッシュで体を拭くと、さっぱりしました。>>'), o); }
+      else { chg({hyg:-6, mind:-3}); await say(H('お風呂に入れない日が続き、{体のべたつきとにおいが気になります。}<br>{拭く物もなく、がまんするしかありません。}'), o); point('お風呂に入れない避難生活に、体拭きシート・ウェットティッシュ・ドライシャンプーを。'); }
+    }},
+  {id:'climate', modes:['shelter','home','car','tent'], have:function(){ return S.inv.climate; }, img:null, lack:LACK_IMG, lb:'暑さ・寒さ',
+    run:async function(h, o){
+      if(S.season === 'summer'){
+        if(h){ chg({hp:+5}); await say(H('日中は35℃を超え、{汗が止まりません。}<br><<冷却シート・携帯扇風機・塩分タブレットで、熱中症を防げました。>>'), o); }
+        else { chg({hp:-4}); await say(H('日中は35℃を超え、{汗が止まりません。}<br>{頭がぼーっとして、熱中症の一歩手前です。}'), o); point('夏は、冷却シート・携帯扇風機・経口補水液・塩分タブレットで熱中症対策を。'); }
+      } else {
+        var lead = (S.season === 'winter' ? '夜の冷え込みが厳しく' : '朝晩が冷え込み') + '、{体が冷えて眠れません。}';
+        if(h){ chg({hp:+5}); await say(H(lead + '<br><<寝袋・毛布・カイロで体を温めると、眠れるようになりました。>>'), o); }
+        else { chg({hp:S.season === 'winter' ? -4 : -2}); await say(H(lead + '<br>{上着を重ねても寒く、何度も目が覚めました。}'), o); point('寒さに備え、寝袋・毛布・カイロ・アルミシートを。'); }
+      }
+    }},
+  {id:'nighttoilet', modes:['car','tent'], have:function(){ return S.inv.toilet >= S.n * 2; }, img:'use_portable_toilet_night|toilet_kit', lack:'tent_toilet_line', lb:'夜のトイレ',
+    run:async function(h, o){
+      if(h){ chg({toilet:-1, mind:+3}); await say(H('夜中にトイレへ行きたくなりました。仮設トイレは遠く、暗い道を歩くのは危険です。<br><<携帯トイレを使って、' + PLACE[S.mode] + 'の中で用を足せました。>>'), o); }
+      else { chg({hp:-2, mind:-4}); await say(H('夜中にトイレへ行きたくなりました。<br>{暗い道を歩いて仮設トイレへ。何度も目が覚めてしまいました。}'), o); point('車中泊・テント泊でも、夜間用に携帯トイレを。'); }
+    }},
+  {id:'gloves', modes:['shelter','home','car','tent','relative'], have:function(){ return S.inv.bag; }, img:'use_gloves_mask|home_cleanup', lack:LACK_IMG, lb:'軍手・マスク',
+    run:async function(h, o){
+      if(S.mode === 'shelter'){
+        if(h){ chg({hyg:+4}); await say(H('体育館の中はほこりっぽく、せきをしている人もいます。<br><<持ち出し袋のマスクをつけました。>>'), o); }
+        else { chg({hp:-2}); await say(H('体育館の中はほこりっぽく、せきをしている人もいます。<br>{マスクがなく、のどが痛くなってきました。}'), o); point('持ち出し袋に、マスク・軍手(革手袋)・ホイッスルを。'); }
+        return;
+      }
+      var lead = S.mode === 'relative' ? '親戚の家の周りでも、ブロック塀が崩れています。片付けを手伝います。' : '割れたガラスやがれきを片付けます。';
+      if(h){ chg({mind:+2}); await say(H(lead + '<br><<持ち出し袋の軍手(革手袋)をはめて、けがをせずに片付けられました。>>'), o); }
+      else { chg({hp:-3}); await say(H(lead + '<br>{素手で作業して、手を切ってしまいました。}'), o); point('持ち出し袋に、軍手(革手袋)・マスク・ホイッスルを。'); }
+    }},
+  {id:'docs', modes:['shelter','home','car','tent','relative'], have:function(){ return S.inv.notebook; }, img:'use_documents|medical_post', lack:'medical_post', lb:'お薬手帳・保険証',
+    run:async function(h, o){
+      var lead = '体調がすぐれず、' + (S.mode === 'relative' ? '近くの病院' : '救護所') + 'で診てもらうことに。';
+      if(h){ chg({mind:+3}); await say(H(lead + '<br><<お薬手帳と保険証のコピーがあり、飲んでいる薬や持病がすぐに伝わりました。>>'), o); }
+      else { chg({mind:-4, hp:-1}); await say(H(lead + '<br>{飲んでいる薬や持病を正確に伝えられず、時間がかかりました。}'), o); point('保険証・お薬手帳・身分証のコピー(スマホの写真でも)を持ち出し袋に。'); }
+    }},
+  {id:'refill', modes:['shelter','home','car','tent','relative'], have:function(){ return S.prep; }, img:'use_bag_refill|prep_done', lack:LACK_IMG, lb:'備えの見直し',
+    run:async function(h, o){
+      if(h){ chg({mind:+4}); await say(H('少し落ち着いたので、使った物を確かめます。<br><<備えていた物を見直し、使った分と足りなかった物をメモしました。「次は何を増やすか」が見えてきました。>>'), o); }
+      else { chg({mind:-3}); await say(H('少し落ち着いたので、手元の物を確かめます。<br>{そもそも備えがなく、何が必要だったのかを思い知らされました。}'), o); }
+      point('備蓄は使ったら補充する。ふだん使う物を少し多めに買い置きして使いながら補充する「ローリングストック」を。');
+    }}
+];
+async function stockUse(d){
+  S.usedUse = S.usedUse || [];
+  var pool = STOCK_USE.filter(function(x){ return x.modes.indexOf(S.mode) >= 0 && S.usedUse.indexOf(x.id) < 0; });
+  if(!pool.length) return;
+  var ids = shuffle(pool);
+  var u = ids[0];
+  if(u.id === 'refill' && d < 5 && ids.length > 1) u = ids[1];      // 「見直し」は最後(5日目)に回す
+  if(d === 5){ var rf = pool.filter(function(x){ return x.id === 'refill'; })[0]; if(rf) u = rf; }
+  S.usedUse.push(u.id);
+  var h = !!u.have();
+  var img = u.img || (S.season === 'summer' ? 'use_cool_goods|car_heat' : 'use_warm_goods|tent_cold');
+  scene({});
+  await u.run(h, {img:h ? img : u.lack, ic:h ? '🎒' : '😣', lb:'備蓄を使う ' + S.usedUse.length + '/5 ・ ' + u.lb, pal:h ? 'good' : 'bad'});
+  tl('備蓄を使う場面(' + u.lb + '):' + (h ? '備えがあって役立った' : '備えがなく困った'));
 }
 
 </script>
