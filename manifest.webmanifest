@@ -1,0 +1,20 @@
+{
+  "name": "備蓄サバイバル・シミュレーター",
+  "short_name": "備蓄シミュレーター",
+  "description": "備えたもので、地震後の1週間はこう変わる。あなたは7日間を乗り切れるか?(DWA防災情報センター)",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "ja",
+  "background_color": "#0f1522",
+  "theme_color": "#0f1522",
+  "categories": ["education", "games"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
