@@ -291,6 +291,7 @@ body.op-lock{overflow:hidden}
 /* オープニングの読み込み表示 */
 .op-load{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);width:min(70%,360px);display:none;flex-direction:column;align-items:center;gap:8px;color:#e9eef6;font-weight:700;font-size:calc((13px) * var(--k));text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
 .op-load.on{display:flex}
+.op-load.msg{bottom:5%;pointer-events:none}.op-load.msg i{display:none}.op-load.msg span{background:rgba(0,0,0,.55);padding:6px 12px;border-radius:99px}
 .op-load i{display:block;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
 .op-load b{display:block;height:100%;width:0;background:linear-gradient(90deg,#3ddc97,#5aa9ff);border-radius:99px;transition:width .2s}
 
@@ -1199,7 +1200,7 @@ document.addEventListener('visibilitychange', function(){
 /* 最初は音なしで自動再生。「音を出して最初から見る」で、音ありで頭から見直せる。
    途中で止まらないよう、動画を最後まで読み込んでから再生する(7秒・1〜2MB)。
    スマホや通信が遅いときは軽い720p版(opening-sd.mp4)、大きな画面ではフルHD版(opening.mp4)を使う */
-var OP = {bgm:false, ready:false, loading:false, url:null, started:false, wantSound:false};
+var OP = {bgm:false, ready:false, loading:false, url:null, started:false, wantSound:false, file:'', blocked:false, fellBack:false, prog:0, progAt:0};
 function opMoving(){ var v = $('opV'); return !!v && !v.paused && !v.ended && v.currentTime > 0.1; }
 function opRender(){
   var v = $('opV'), b = $('opSnd'); if(!v || !b) return;
@@ -1220,7 +1221,7 @@ function opProgress(p){
 }
 /* 動画を最後まで読み込む(できないときは、そのまま再生しながら読み込む) */
 function opLoad(file, done){
-  OP.loading = true;
+  OP.loading = true; OP.file = file; OP.progAt = Date.now();
   var v = $('opV');
   var direct = function(){ if(OP.ready) return; v.preload = 'auto'; v.src = file; OP.ready = true; OP.loading = false; done(); };
   if(!window.fetch || !window.URL || !URL.createObjectURL || !/^https?:$/.test(location.protocol)) return direct();
@@ -1231,7 +1232,7 @@ function opLoad(file, done){
     var reader = r.body.getReader(), got = 0, parts = [];
     return (function pump(){ return reader.read().then(function(x){
       if(x.done) return new Blob(parts, {type:'video/mp4'});
-      parts.push(x.value); got += x.value.length; opProgress(Math.min(1, got / total)); return pump();
+      parts.push(x.value); got += x.value.length; OP.prog = Math.min(1, got / total); OP.progAt = Date.now(); opProgress(OP.prog); return pump();
     }); })();
   }).then(function(blob){
     if(OP.ready) return;
@@ -1249,21 +1250,44 @@ function opResumeBgm(){
   if(SND.on){ var m = SND.mood; SND.mood = ''; bgm(m && m !== 'off' ? m : 'calm'); }
 }
 function opPlayNow(sound){
-  var v = $('opV'); $('opLoad').classList.remove('on'); $('opPlay').hidden = true;
+  var v = $('opV'); $('opLoad').classList.remove('on', 'msg'); $('opPlay').hidden = true; OP.blocked = false;
   v.muted = !sound; OP.started = false;
   try{ v.pause(); }catch(e){}
   try{ v.currentTime = 0; }catch(e){}
   var p = v.play();
-  if(p && p.catch) p.catch(function(){
-    if(!v.muted){ v.muted = true; opRender(); var q = v.play(); if(q && q.catch) q.catch(function(){ $('opPlay').hidden = false; }); }
-    else $('opPlay').hidden = false;
+  /* 自動再生が止められたとき(NotAllowedError)だけ ▶ を出す。動画そのもののエラーは error イベント側で処理 */
+  var isBlock = function(e){ return !e || e.name === 'NotAllowedError'; };
+  if(p && p.catch) p.catch(function(e){
+    if(!isBlock(e)) return;
+    if(!v.muted){ v.muted = true; opRender(); var q = v.play(); if(q && q.catch) q.catch(function(e2){ if(isBlock(e2)) opBlocked(); }); }
+    else opBlocked();
   });
-  setTimeout(function(){ if(!opMoving() && $('op').classList.contains('on') && OP.ready) $('opPlay').hidden = false; }, 2500);
+  setTimeout(function(){ if(!opMoving() && $('op').classList.contains('on') && OP.ready && !v.seeking && !v.error) opBlocked(); }, 2500);
   opRender();
+}
+/* 自動再生が止められた(省電力モード・データセーバーなど)→ ▶ を出して、タップを待つ(勝手に閉じない) */
+function opBlocked(){
+  if(opMoving() || !$('op').classList.contains('on') || $('opV').error) return;
+  OP.blocked = true; $('opPlay').hidden = false;
+  $('opLoadTx').textContent = '▶ をタップすると再生します'; $('opBar').style.width = '100%';
+  $('opLoad').classList.add('on', 'msg');
+}
+/* 再生できなかったとき:読み込んだ動画 → 動画ファイルを直接、の順に試し、それでもだめなら理由を出してタイトルへ */
+function opFail(){
+  var v = $('opV'); if(!$('op').classList.contains('on')) return;
+  if(!OP.fellBack && OP.file){
+    OP.fellBack = true;
+    if(OP.url){ try{ URL.revokeObjectURL(OP.url); }catch(e){} OP.url = null; }
+    v.preload = 'auto'; v.src = OP.file; try{ v.load(); }catch(e){}
+    opPlayNow(OP.wantSound); return;
+  }
+  $('opPlay').hidden = true; $('opLoadTx').textContent = 'この端末では動画を再生できませんでした'; $('opBar').style.width = '0';
+  $('opLoad').classList.add('on', 'msg');
+  setTimeout(opClose, 2500);
 }
 function opStart(sound){
   var o = $('op'); if(!o) return;
-  o.classList.add('on'); document.body.classList.add('op-lock'); $('opPlay').hidden = true;
+  o.classList.add('on'); document.body.classList.add('op-lock'); $('opPlay').hidden = true; OP.blocked = false; $('opLoad').classList.remove('msg');
   OP.wantSound = !!sound;
   if(sound) opPauseBgm();
   if(OP.ready){ opPlayNow(sound); return; }
@@ -1285,14 +1309,21 @@ function opClose(){
 }
 (function opInit(){
   var v = $('opV'); if(!v) return;
-  v.addEventListener('error', function(){ if(OP.ready) opClose(); });
+  v.addEventListener('error', function(){ if(OP.ready) opFail(); });
   v.addEventListener('ended', function(){ setTimeout(opClose, 600); });
-  v.addEventListener('playing', function(){ $('opPlay').hidden = true; OP.started = true; });
+  v.addEventListener('playing', function(){ $('opPlay').hidden = true; OP.started = true; OP.blocked = false; $('opLoad').classList.remove('on', 'msg'); });
   v.addEventListener('timeupdate', function(){ if(v.currentTime > 0.15 && !v.paused){ OP.started = true; $('opPlay').hidden = true; } });
   /* 画面のどこをタップしても再生できる(省電力モードなどで自動再生が止められたとき用) */
   v.addEventListener('click', function(){ if(OP.ready && v.paused){ var q = v.play(); if(q && q.catch) q.catch(function(){}); } });
   /* 15秒たっても読み込めなければタイトルへ進む(通信がとても遅いとき用。読み込みは裏で続ける) */
-  setTimeout(function(){ if(!OP.started && !opMoving() && $('op').classList.contains('on')) opClose(); }, 15000);
+  /* 通信がとても遅いときだけタイトルへ進む:読み込みが10秒以上進んでいない、または40秒たっても読み込めない。
+     ▶ が出ている(自動再生が止められた)ときは、タップを待つので閉じない */
+  var t0 = Date.now();
+  (function watch(){
+    if(OP.started || !$('op').classList.contains('on')) return;
+    if(!OP.blocked && !opMoving() && OP.loading && (Date.now() - OP.progAt > 10000 || Date.now() - t0 > 40000)){ opClose(); return; }
+    setTimeout(watch, 1000);
+  })();
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && $('op').classList.contains('on')) opClose(); });
   opStart(false);
 })();
